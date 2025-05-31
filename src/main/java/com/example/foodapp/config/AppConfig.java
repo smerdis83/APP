@@ -22,27 +22,52 @@ public class AppConfig {
 
     /** Returns the raw property value or null if not found. */
     public static String get(String key) {
-        return props.getProperty(key);
+        String value = props.getProperty(key);
+        return value != null ? value.trim() : null;
     }
 
     // Convenience getters for DB and JWT:
     public static String getDbUrl() {
-        return get("db.url");
+        String value = get("db.url");
+        if (value == null) {
+            throw new RuntimeException("db.url is not set in application.properties");
+        }
+        return value;
     }
 
     public static String getDbUsername() {
-        return get("db.username");
+        String value = get("db.username");
+        if (value == null) {
+            throw new RuntimeException("db.username is not set in application.properties");
+        }
+        return value;
     }
 
     public static String getDbPassword() {
-        return get("db.password");
+        String value = get("db.password");
+        if (value == null) {
+            throw new RuntimeException("db.password is not set in application.properties");
+        }
+        return value;
     }
 
     public static String getJwtSecret() {
-        return get("jwt.secret");
+        String value = get("jwt.secret");
+        if (value == null) {
+            throw new RuntimeException("jwt.secret is not set in application.properties");
+        }
+        return value;
     }
 
     public static long getJwtExpirationMs() {
-        return Long.parseLong(get("jwt.expirationMs"));
+        String value = get("jwt.expirationMs");
+        if (value == null) {
+            throw new RuntimeException("jwt.expirationMs is not set in application.properties");
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Invalid jwt.expirationMs value in application.properties: " + value);
+        }
     }
 }
