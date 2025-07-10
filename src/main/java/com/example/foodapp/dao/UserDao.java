@@ -12,6 +12,34 @@ import java.time.LocalDateTime;
  */
 public class UserDao {
 
+    public UserDao(){
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            conn = JdbcUtil.getConnection();
+            System.out.println("Connected to MySQL successfully!");
+        }
+        createUserTable();
+    }
+
+    public void createUserTable() throws SQLException {
+        String sql = "CREATE TABLE IF NOT EXISTS users (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "full_name VARCHAR(100) NOT NULL, " +
+                "phone VARCHAR(20) NOT NULL UNIQUE, " +
+                "email VARCHAR(100), " +
+                "password_hash VARCHAR(255) NOT NULL, " +
+                "role ENUM('ADMIN', 'USER') NOT NULL, " +
+                "enabled BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
+                ")";
+        try (Connection connection = JdbcUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.executeUpdate();
+        }
+    }
     /**
      * Inserts a new user into the database.
      * On success, sets the generated ID on the provided User object.
