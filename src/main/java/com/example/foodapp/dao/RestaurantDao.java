@@ -10,6 +10,30 @@ import java.util.List;
 
 public class RestaurantDao {
 
+    public RestaurantDao() {
+        try {
+            createRestaurantTable();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to ensure restaurants table", e);
+        }
+    }
+
+    public void createRestaurantTable() throws SQLException {
+        String sql = "CREATE TABLE IF NOT EXISTS restaurants (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "name VARCHAR(100) NOT NULL, " +
+                "address VARCHAR(255), " +
+                "phone VARCHAR(20), " +
+                "owner_id INT NOT NULL, " +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
+                ")";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.executeUpdate();
+        }
+    }
+
     /**
      * Inserts a new restaurant row into the DB.
      * On success, sets the generated ID on the Restaurant object.

@@ -12,15 +12,12 @@ import java.time.LocalDateTime;
  */
 public class UserDao {
 
-    public UserDao(){
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
+    public UserDao() {
         try {
-            conn = JdbcUtil.getConnection();
-            System.out.println("Connected to MySQL successfully!");
+            createUserTable();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to ensure users table", e);
         }
-        createUserTable();
     }
 
     public void createUserTable() throws SQLException {
