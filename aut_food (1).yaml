@@ -1,0 +1,2503 @@
+openapi: 3.0.3
+info:
+  title: Online Food Ordering API
+  version: 1.0.0
+  description: RESTful API for food ordering system (buyers, sellers, couriers, and
+    admin).
+servers:
+- url: https://api.food-ordering.com/v1
+tags:
+- name: auth
+  description: Authentication and user profile APIs
+- name: restaurant
+  description: APIs related to restaurant management
+- name: buyer
+  description: APIs for buyers to browse, order, and review
+- name: courier
+  description: APIs for couriers to manage deliveries
+- name: order
+  description: APIs for order tracking and payment processing
+- name: admin
+  description: Administrative APIs for user, order, and finance management
+paths:
+  /auth/register:
+    post:
+      tags:
+      - auth
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - full_name
+              - phone
+              - password
+              - role
+              - address
+              properties:
+                full_name:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum:
+                  - buyer
+                  - seller
+                  - courier
+                address:
+                  type: string
+                profileImageBase64:
+                  type: string
+                bank_info:
+                  type: object
+                  required:
+                  - bankName
+                  - accountNumber
+                  properties:
+                    bank_name:
+                      type: string
+                    account_number:
+                      type: string
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user_id:
+                    type: string
+                  token:
+                    type: string
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '409':
+          description: Phone number already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+              examples:
+                Phone number already exists:
+                  value: '{
+
+                    "error":"Phone number already exists"
+
+                    }'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /auth/login:
+    post:
+      tags:
+      - auth
+      summary: Login a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - phone
+              - password
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/user'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /auth/profile:
+    get:
+      tags:
+      - auth
+      summary: Get current user profile
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    put:
+      tags:
+      - auth
+      summary: Update current user profile
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                address:
+                  type: string
+                profileImageBase64:
+                  type: string
+                bank_info:
+                  type: object
+                  required:
+                  - bank_name
+                  - account_number
+                  properties:
+                    bank_name:
+                      type: string
+                    account_number:
+                      type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /auth/logout:
+    post:
+      tags:
+      - auth
+      summary: Logout user
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: User logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants:
+    post:
+      tags:
+      - restaurant
+      summary: Create a new restaurant (seller only)
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - address
+              - phone
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                phone:
+                  type: string
+                logoBase64:
+                  type: string
+                tax_fee:
+                  type: integer
+                additional_fee:
+                  type: integer
+      responses:
+        '201':
+          description: Restaurant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/restaurant'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/mine:
+    get:
+      tags:
+      - restaurant
+      summary: Get list of seller's restaurants
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of restaurants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/restaurants_list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/{id}:
+    put:
+      tags:
+      - restaurant
+      summary: Update restaurant details
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                phone:
+                  type: string
+                logoBase64:
+                  type: string
+                tax_fee:
+                  type: integer
+                additional_fee:
+                  type: integer
+      responses:
+        '200':
+          description: Restaurant updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/restaurant'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/{id}/item:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      tags:
+      - restaurant
+      summary: Add food item to restaurant with a specific id
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - description
+              - price
+              - supply
+              - keywords
+              - vendor_id
+              properties:
+                name:
+                  type: string
+                imageBase64:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: integer
+                supply:
+                  type: integer
+                keywords:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Food item created and added to restaurant successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/food_item'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/{id}/item/{item_id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    - name: item_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    put:
+      tags:
+      - restaurant
+      summary: Edit food item of a restaurant with a specific id
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                imageBase64:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: integer
+                supply:
+                  type: integer
+                keywords:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Food item edited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/food_item'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    delete:
+      tags:
+      - restaurant
+      summary: Delete item
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Food item removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/{id}/menu:
+    post:
+      tags:
+      - restaurant
+      summary: Add restaurant menu to system for specific restaurant id
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+      responses:
+        '200':
+          description: Food menu created and added to restaurant successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/{id}/menu/{title}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    - name: title
+      in: path
+      required: true
+      schema:
+        type: string
+    delete:
+      tags:
+      - restaurant
+      summary: Delete restaurant menu from system for specific restaurant id
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Food menu removed from restaurant successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    put:
+      tags:
+      - restaurant
+      summary: Add item to a menu of a restaurant with specific id
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                item_id:
+                  type: integer
+      responses:
+        '200':
+          description: Food item created and added to restaurant successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/{id}/menu/{title}/{item_id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    - name: title
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: item_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    delete:
+      tags:
+      - restaurant
+      summary: Delete item from restaurant menu
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Item removed from restaurant menu successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/{id}/orders:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: user
+        in: query
+        schema:
+          type: string
+      - name: courier
+        in: query
+        schema:
+          type: string
+      tags:
+      - restaurant
+      summary: Get list of orders for a specific restaurant
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/order'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /restaurants/orders/{order_id}:
+    parameters:
+    - name: order_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    patch:
+      tags:
+      - restaurant
+      summary: Change status of an order for a restaurant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - accepted
+                  - rejected
+                  - served
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Order status changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /vendors:
+    post:
+      tags:
+      - buyer
+      summary: List vendors with optional filters
+      security:
+      - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                search:
+                  type: string
+                keywords:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: List of vendors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/restaurant'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /vendors/{id}:
+    get:
+      tags:
+      - buyer
+      summary: View menu items for a vendor
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Vendor menu items. There's an array of menu titles of this
+            vendor with key "menu_titles". For each items in "menu_titles", there's
+            a key which contains all items inside that title.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vendor:
+                    $ref: '#/components/schemas/restaurant'
+                  menu_titles:
+                    type: array
+                    items:
+                      type: string
+                  menu_title:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/food_item'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /items:
+    post:
+      tags:
+      - buyer
+      summary: List items with optional filters
+      security:
+      - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                search:
+                  type: string
+                price:
+                  type: integer
+                keywords:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: List of items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/food_item'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /items/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      tags:
+      - buyer
+      summary: Get details of a specific item
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/food_item'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /coupons:
+    get:
+      tags:
+      - buyer
+      summary: Check if a coupon is valid
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: coupon_code
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Coupon details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/coupon'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /orders:
+    post:
+      tags:
+      - buyer
+      summary: Submit an order
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - delivery_address
+              - items
+              - vendor_id
+              properties:
+                delivery_address:
+                  type: string
+                vendor_id:
+                  type: integer
+                coupon_id:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - item_id
+                    - quantity
+                    properties:
+                      item_id:
+                        type: integer
+                      quantity:
+                        type: integer
+      responses:
+        '200':
+          description: Order submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/order'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /orders/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      tags:
+      - buyer
+      summary: Get details of a specific order
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/order'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /orders/history:
+    get:
+      tags:
+      - buyer
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: vendor
+        in: query
+        schema:
+          type: string
+      summary: Get order history
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of past orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/order'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /favorites:
+    get:
+      tags:
+      - buyer
+      summary: Get favorite restaurants
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of favorite restaurants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/restaurants_list'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /favorites/{restaurantId}:
+    parameters:
+    - name: restaurantId
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      tags:
+      - buyer
+      summary: Add a restaurant to favorites
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Added to favorites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    delete:
+      tags:
+      - buyer
+      summary: Remove a restaurant from favorites
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Removed from favorites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /ratings:
+    post:
+      tags:
+      - buyer
+      summary: Submit rating and review
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - orderId
+              - rating
+              - comment
+              properties:
+                order_id:
+                  type: integer
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                imageBase64:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Rating submitted
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /ratings/items/{item_id}:
+    parameters:
+    - name: item_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      tags:
+      - buyer
+      summary: Get ratings and reviews for a specific item
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of ratings and reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  avg_rating:
+                    type: number
+                  comments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/rating'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /ratings/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      tags:
+      - buyer
+      summary: Get a specific rating or review
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Rating details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rating'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    delete:
+      tags:
+      - buyer
+      summary: Delete a rating or review
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Rating deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/message'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    put:
+      tags:
+      - buyer
+      summary: Update a rating or review
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                imageBase64:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Rating updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - item_id
+                - rating
+                - comment
+                - user_id
+                - created_at
+                properties:
+                  id:
+                    type: integer
+                  order_id:
+                    type: integer
+                  rating:
+                    type: integer
+                  comment:
+                    type: string
+                  user_id:
+                    type: integer
+                  created_at:
+                    type: string
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /deliveries/available:
+    get:
+      tags:
+      - courier
+      summary: Get available delivery requests
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of available deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/order'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /deliveries/{order_id}:
+    patch:
+      tags:
+      - courier
+      summary: Change status of a delivery request
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - accepted
+                  - received
+                  - delivered
+      responses:
+        '200':
+          description: Changed status successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  order:
+                    $ref: '#/components/schemas/order'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '500':
+          description: Internal server error
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '409':
+          description: Delivery already assigned
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+  /deliveries/history:
+    get:
+      tags:
+      - courier
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: vendor
+        in: query
+        schema:
+          type: string
+      - name: user
+        in: query
+        schema:
+          type: string
+      summary: Get delivery history
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of completed and active deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/order'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /transactions:
+    get:
+      tags:
+      - order
+      summary: Get user's transaction history
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/transaction'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /wallet/top-up:
+    post:
+      tags:
+      - order
+      summary: Top up user's wallet
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - amount
+              properties:
+                amount:
+                  type: number
+      responses:
+        '200':
+          description: Wallet topped up successfully
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /payment/online:
+    post:
+      tags:
+      - order
+      summary: Make an online payment for an order
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - order_id
+              - method
+              properties:
+                order_id:
+                  type: integer
+                method:
+                  type: string
+                  enum:
+                  - wallet
+                  - online
+      responses:
+        '200':
+          description: Payment successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/transaction'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /admin/users:
+    get:
+      tags:
+      - admin
+      summary: List all users
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/user'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /admin/users/{id}/status:
+    patch:
+      tags:
+      - admin
+      summary: Update user approval status
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - approved
+                  - rejected
+      responses:
+        '200':
+          description: Status updated
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /admin/orders:
+    get:
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: vendor
+        in: query
+        schema:
+          type: string
+      - name: courier
+        in: query
+        schema:
+          type: string
+      - name: customer
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      tags:
+      - admin
+      summary: View all orders
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/order'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /admin/transactions:
+    get:
+      parameters:
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: user
+        in: query
+        schema:
+          type: string
+      - name: method
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      tags:
+      - admin
+      summary: View financial transactions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of financial transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/transaction'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /admin/coupons:
+    get:
+      tags:
+      - admin
+      summary: List all coupons
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of coupons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/coupon'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    post:
+      tags:
+      - admin
+      summary: Create a coupon
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - coupon_code
+              - type
+              - value
+              - min_price
+              - user_count
+              - startDate
+              - endDate
+              properties:
+                coupon_code:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                  - fixed
+                  - percent
+                value:
+                  type: number
+                min_price:
+                  type: integer
+                user_count:
+                  type: integer
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Coupon created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/coupon'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+  /admin/coupons/{id}:
+    delete:
+      tags:
+      - admin
+      summary: Delete a coupon
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Coupon deleted
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    put:
+      tags:
+      - admin
+      summary: Update a coupon
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                coupon_code:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                  - fixed
+                  - percent
+                value:
+                  type: number
+                min_price:
+                  type: integer
+                user_count:
+                  type: integer
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+      responses:
+        '200':
+          description: Coupon updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/coupon'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+    get:
+      tags:
+      - admin
+      summary: Get coupon details
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: coupon details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/coupon'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '400':
+          $ref: '#/components/responses/invalid_input'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '415':
+          $ref: '#/components/responses/unsupported_media_type'
+        '429':
+          $ref: '#/components/responses/too_many_requests'
+        '500':
+          $ref: '#/components/responses/internal_server_error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    message:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+    error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+    user:
+      type: object
+      required:
+      - id
+      - full_name
+      - phone
+      - email
+      - role
+      - address
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        address:
+          type: string
+        profileImageBase64:
+          type: string
+        bank_info:
+          type: object
+          required:
+          - bank_name
+          - account_number
+          properties:
+            bank_name:
+              type: string
+            account_number:
+              type: string
+    restaurant:
+      type: object
+      required:
+      - name
+      - address
+      - phone
+      - tax_fee
+      - additional_fee
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        logoBase64:
+          type: string
+        tax_fee:
+          type: integer
+        additional_fee:
+          type: integer
+    restaurants_list:
+      type: array
+      items:
+        $ref: '#/components/schemas/restaurant'
+    food_item:
+      type: object
+      required:
+      - name
+      - description
+      - price
+      - supply
+      - keywords
+      - vendor_id
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        imageBase64:
+          type: string
+        description:
+          type: string
+        vendor_id:
+          type: integer
+        price:
+          type: integer
+        supply:
+          type: integer
+        keywords:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    transaction:
+      type: object
+      required:
+      - id
+      - order_id
+      - user_id
+      - method
+      - status
+      properties:
+        id:
+          type: integer
+        order_id:
+          type: integer
+        user_id:
+          type: integer
+        method:
+          type: string
+          enum:
+          - wallet
+          - online
+        status:
+          type: string
+          enum:
+          - success
+          - failed
+    order:
+      type: object
+      required: [id, delivery_address, customer_id, item_ids, vendor_id, raw_price, tax_fee, courier_fee, additional_fee, pay_price, status, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+        delivery_address:
+          type: string
+        customer_id:
+          type: integer
+        vendor_id:
+          type: integer
+        coupon_id:
+          type: integer
+        item_ids:
+          type: array
+          items:
+            type: integer
+        raw_price:
+          type: integer
+        tax_fee:
+          type: integer
+        additional_fee:
+          type: integer
+        courier_fee:
+          type: integer
+        pay_price:
+          type: integer
+        courier_id:
+          type: integer
+        status:
+          type: string
+          enum:
+          - submitted
+          - unpaid and cancelled
+          - waiting vendor
+          - cancelled
+          - finding courier
+          - on the way
+          - completed
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    rating:
+      type: object
+      required:
+      - id
+      - item_id
+      - rating
+      - comment
+      - user_id
+      - created_at
+      properties:
+        id:
+          type: integer
+        item_id:
+          type: integer
+        rating:
+          type: integer
+        comment:
+          type: string
+        imageBase64:
+          type: array
+          items:
+            type: string
+        user_id:
+          type: integer
+        created_at:
+          type: string
+    coupon:
+      type: object
+      required:
+      - id
+      - coupon_code
+      - type
+      - value
+      - min_price
+      - user_count
+      - startDate
+      - endDate
+      properties:
+        id:
+          type: integer
+        coupon_code:
+          type: string
+        type:
+          type: string
+          enum:
+          - fixed
+          - percent
+        value:
+          type: number
+        min_price:
+          type: integer
+        user_count:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+  responses:
+    forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            Forbidden:
+              value: '{
+
+                "error":"Forbidden request"
+
+                }'
+    not_found:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            Not Found:
+              value: '{
+
+                "error":"Resource not found"
+
+                }'
+    unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            Unauthorized:
+              value: '{
+
+                "error":"Unauthorized request"
+
+                }'
+    invalid_input:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            Invalid Field:
+              value: '{
+
+                "error":"Invalid `field name`"
+
+                }'
+    conflict:
+      description: Conflict
+      content:
+        application/json:
+          examples:
+            Conflict:
+              value: "{\n  \"error\":\"Conflict occurred\"\n}"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    unsupported_media_type:
+      description: Unsupported Media Type
+      content:
+        application/json:
+          examples:
+            UnsupportedMediaType:
+              value: "{\n  \"error\":\"Unsupported media type\"\n}"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    too_many_requests:
+      description: Too Many Requests
+      content:
+        application/json:
+          examples:
+            TooManyRequests:
+              value: "{\n  \"error\":\"Too many requests\"\n}"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    internal_server_error:
+      description: Internal Server Error
+      content:
+        application/json:
+          examples:
+            InternalServerError:
+              value: "{\n  \"error\":\"Internal server error\"\n}"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string

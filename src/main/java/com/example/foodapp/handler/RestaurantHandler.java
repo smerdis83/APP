@@ -2,8 +2,10 @@ package com.example.foodapp.handler;
 
 import com.example.foodapp.dao.FoodItemDao;
 import com.example.foodapp.dao.RestaurantDao;
+import com.example.foodapp.dao.MenuDao;
 import com.example.foodapp.model.entity.FoodItem;
 import com.example.foodapp.model.entity.Restaurant;
+import com.example.foodapp.model.entity.Menu;
 import com.example.foodapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -26,6 +28,7 @@ public class RestaurantHandler implements HttpHandler {
     private final ObjectMapper mapper;
     private final RestaurantDao restaurantDao = new RestaurantDao();
     private final FoodItemDao foodItemDao = new FoodItemDao();
+    private final MenuDao menuDao = new MenuDao();
 
     public RestaurantHandler() {
         this.mapper = new ObjectMapper();
@@ -237,6 +240,125 @@ public class RestaurantHandler implements HttpHandler {
                 if (item == null || item.getVendorId() != restaurantId) { sendJson(exchange, 404, new ErrorResponse("Item not found for this restaurant")); return; }
                 try { foodItemDao.deleteFoodItem(itemId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
                 sendJson(exchange, 200, Map.of("message", "Item deleted successfully"));
+                return;
+            } else if (method.equalsIgnoreCase("POST") && path.matches("/restaurants/\\d+/menu")) {
+                // Create a new menu for a restaurant
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // TODO: Optionally check if userId owns restaurantId
+                Restaurant restaurant = null;
+                try { restaurant = restaurantDao.findById(restaurantId); } catch (Exception e) { /* ignore */ }
+                if (restaurant == null || restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) { sb.append(line); }
+                }
+                String json = sb.toString();
+                Menu menu = mapper.readValue(json, Menu.class);
+                menu.setRestaurantId(restaurantId);
+                try { menuDao.addMenu(menu); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 201, menu);
+                return;
+            } else if (method.equalsIgnoreCase("DELETE") && path.matches("/restaurants/\\d+/menu/.+/\\d+")) {
+                // Remove item from a menu
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu/");
+                String rest = path.substring(path.indexOf("/menu/") + 6);
+                String[] parts = rest.split("/");
+                String title = parts[0];
+                int itemId = Integer.parseInt(parts[1]);
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // TODO: Optionally check if userId owns restaurantId
+                try { menuDao.removeItemFromMenu(restaurantId, title, itemId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, Map.of("message", "Item removed from menu"));
+                return;
+            } else if (method.equalsIgnoreCase("DELETE") && path.matches("/restaurants/\\d+/menu/.+")) {
+                // Delete a menu by title
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu/");
+                String title = path.substring(path.indexOf("/menu/") + 6);
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // TODO: Optionally check if userId owns restaurantId
+                Restaurant restaurant = null;
+                try { restaurant = restaurantDao.findById(restaurantId); } catch (Exception e) { /* ignore */ }
+                if (restaurant == null || restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+                try { menuDao.deleteMenu(restaurantId, title); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, Map.of("message", "Menu deleted successfully"));
+                return;
+            } else if (method.equalsIgnoreCase("PUT") && path.matches("/restaurants/\\d+/menu/.+")) {
+                // Add item to a menu
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu/");
+                String title = path.substring(path.indexOf("/menu/") + 6);
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // TODO: Optionally check if userId owns restaurantId
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) { sb.append(line); }
+                }
+                String json = sb.toString();
+                Map<String, Object> req = mapper.readValue(json, Map.class);
+                if (!req.containsKey("item_id")) { sendJson(exchange, 400, new ErrorResponse("Missing item_id")); return; }
+                int itemId = (int) req.get("item_id");
+                // Validate item exists
+                FoodItem foodItem = null;
+                try { foodItem = foodItemDao.getFoodItemById(itemId); } catch (Exception e) { /* ignore */ }
+                if (foodItem == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Item not found"));
+                    return;
+                }
+                // Check if menu exists
+                Menu menuCheck = null;
+                try { menuCheck = menuDao.getMenu(restaurantId, title); } catch (Exception e) { /* ignore */ }
+                if (menuCheck == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Menu not found"));
+                    return;
+                }
+                try { menuDao.addItemToMenu(restaurantId, title, itemId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, Map.of("message", "Item added to menu"));
                 return;
             }
             else {

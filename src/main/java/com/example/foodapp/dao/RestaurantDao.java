@@ -130,4 +130,27 @@ public class RestaurantDao {
 
         return restaurants;
     }
+
+    public Restaurant findById(int id) throws SQLException {
+        String sql = "SELECT id, name, address, phone, owner_id, created_at, updated_at FROM restaurants WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int rid = rs.getInt("id");
+                    String name = rs.getString("name");
+                    String address = rs.getString("address");
+                    String phone = rs.getString("phone");
+                    int ownerId = rs.getInt("owner_id");
+                    Timestamp createdTs = rs.getTimestamp("created_at");
+                    Timestamp updatedTs = rs.getTimestamp("updated_at");
+                    java.time.LocalDateTime createdAt = createdTs != null ? createdTs.toLocalDateTime() : null;
+                    java.time.LocalDateTime updatedAt = updatedTs != null ? updatedTs.toLocalDateTime() : null;
+                    return new Restaurant(rid, name, address, phone, ownerId, createdAt, updatedAt);
+                }
+            }
+        }
+        return null;
+    }
 } 
