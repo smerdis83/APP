@@ -5,6 +5,7 @@ import com.example.foodapp.model.dto.LoginRequest;
 import com.example.foodapp.model.dto.RegisterRequest;
 import com.example.foodapp.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -13,10 +14,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class AuthHandler implements HttpHandler {
     private final AuthService authService = new AuthService();
     private final ObjectMapper mapper = new ObjectMapper();
+
+    public AuthHandler() {
+        this.mapper.registerModule(new JavaTimeModule());
+    }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -25,8 +31,14 @@ public class AuthHandler implements HttpHandler {
 
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
 
-        AuthResponse authResponse;
-        int statusCode;
+        // Check Content-Type for POST /auth/register and /auth/login
+        if ("POST".equalsIgnoreCase(method) && ("/auth/register".equals(path) || "/auth/login".equals(path))) {
+            String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+            if (contentType == null || !contentType.toLowerCase().contains("application/json")) {
+                sendJson(exchange, 415, Map.of("error", "Unsupported Media Type: Content-Type must be application/json"));
+                return;
+            }
+        }
 
         try {
             // Read request body
@@ -40,39 +52,94 @@ public class AuthHandler implements HttpHandler {
             }
             String requestJson = sb.toString();
 
-            if ("POST".equalsIgnoreCase(method) && "/auth/register".equals(path)) {
-                RegisterRequest registerReq = mapper.readValue(requestJson, RegisterRequest.class);
-                authService.register(
-                        registerReq.getFullName(),
-                        registerReq.getPhone(),
-                        registerReq.getEmail(),
-                        registerReq.getPassword(),
-                        registerReq.getRole()
-                );
-                statusCode = 201; // Created
-                authResponse = new AuthResponse(null, null);
-
-            } else if ("POST".equalsIgnoreCase(method) && "/auth/login".equals(path)) {
-                LoginRequest loginReq = mapper.readValue(requestJson, LoginRequest.class);
-                String token = authService.login(loginReq.getPhone(), loginReq.getPassword());
-                statusCode = 200; // OK
-                authResponse = new AuthResponse(token, null);
-
-            } else {
-                statusCode = 404; // Not Found
-                authResponse = new AuthResponse(null, "Not Found");
+            if ("POST".equalsIgnoreCase(method) && "/auth/logout".equals(path)) {
+                // Require Authorization header
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, Map.of("error", "Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                try {
+                    com.example.foodapp.security.JwtUtil.parseToken(token);
+                } catch (Exception e) {
+                    sendJson(exchange, 401, Map.of("error", "Invalid token"));
+                    return;
+                }
+                sendJson(exchange, 200, Map.of("message", "Logged out successfully"));
+                return;
             }
 
-        } catch (IllegalArgumentException e) {
-            statusCode = 400; // Bad Request
-            authResponse = new AuthResponse(null, e.getMessage());
+            if ("POST".equalsIgnoreCase(method) && "/auth/register".equals(path)) {
+                Map<String, Object> registerReq = mapper.readValue(requestJson, Map.class);
+                // Validate required fields
+                if (!registerReq.containsKey("fullName") || !registerReq.containsKey("phone") ||
+                    !registerReq.containsKey("password") || !registerReq.containsKey("role")) {
+                    sendJson(exchange, 400, Map.of("error", "Missing required fields: fullName, phone, password, role"));
+                    return;
+                }
+                try {
+                    var user = authService.register(
+                        (String) registerReq.get("fullName"),
+                        (String) registerReq.get("phone"),
+                        (String) registerReq.get("email"),
+                        (String) registerReq.get("password"),
+                        (String) registerReq.get("role")
+                    );
+                    String token = authService.login((String) registerReq.get("phone"), (String) registerReq.get("password"));
+                    user.setPasswordHash(null);
+                    sendJson(exchange, 200, Map.of(
+                        "message", "User registered successfully",
+                        "user_id", String.valueOf(user.getId()),
+                        "token", token,
+                        "user", user
+                    ));
+                    return;
+                } catch (IllegalArgumentException e) {
+                    if (e.getMessage() != null && e.getMessage().toLowerCase().contains("phone number already registered")) {
+                        sendJson(exchange, 409, Map.of("error", "Phone number already exists"));
+                    } else {
+                        sendJson(exchange, 400, Map.of("error", e.getMessage()));
+                    }
+                    return;
+                }
+            } else if ("POST".equalsIgnoreCase(method) && "/auth/login".equals(path)) {
+                Map<String, Object> loginReq = mapper.readValue(requestJson, Map.class);
+                if (!loginReq.containsKey("phone") || !loginReq.containsKey("password")) {
+                    sendJson(exchange, 400, Map.of("error", "Missing required fields: phone, password"));
+                    return;
+                }
+                try {
+                    String phone = (String) loginReq.get("phone");
+                    String password = (String) loginReq.get("password");
+                    String token = authService.login(phone, password);
+                    var user = authService.getUserByPhone(phone);
+                    user.setPasswordHash(null);
+                    sendJson(exchange, 200, Map.of(
+                        "message", "User logged in successfully",
+                        "token", token,
+                        "user", user
+                    ));
+                    return;
+                } catch (IllegalArgumentException e) {
+                    sendJson(exchange, 401, Map.of("error", e.getMessage()));
+                    return;
+                } catch (Exception e) {
+                    sendJson(exchange, 500, Map.of("error", "Server error: " + e.getMessage()));
+                    return;
+                }
+            } else {
+                sendJson(exchange, 404, Map.of("error", "Not Found"));
+                return;
+            }
         } catch (Exception e) {
-            e.printStackTrace();
-            statusCode = 500; // Internal Server Error
-            authResponse = new AuthResponse(null, "Server error: " + e.getMessage());
+            sendJson(exchange, 500, Map.of("error", "Internal server error: " + e.getMessage()));
         }
+    }
 
-        byte[] responseBytes = mapper.writeValueAsBytes(authResponse);
+    private void sendJson(HttpExchange exchange, int statusCode, Object payload) throws IOException {
+        byte[] responseBytes = mapper.writeValueAsBytes(payload);
+        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(statusCode, responseBytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(responseBytes);

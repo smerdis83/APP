@@ -1,6 +1,8 @@
 package com.example.foodapp.handler;
 
+import com.example.foodapp.dao.FoodItemDao;
 import com.example.foodapp.dao.RestaurantDao;
+import com.example.foodapp.model.entity.FoodItem;
 import com.example.foodapp.model.entity.Restaurant;
 import com.example.foodapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,10 +20,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 public class RestaurantHandler implements HttpHandler {
     private final ObjectMapper mapper;
     private final RestaurantDao restaurantDao = new RestaurantDao();
+    private final FoodItemDao foodItemDao = new FoodItemDao();
 
     public RestaurantHandler() {
         this.mapper = new ObjectMapper();
@@ -153,7 +157,89 @@ public class RestaurantHandler implements HttpHandler {
                 // Return 201 Created with the new restaurant in body
                 sendJson(exchange, 201, createReq);
 
-            } else {
+            } else if (method.equalsIgnoreCase("POST") && path.matches("/restaurants/\\d+/item")) {
+                // Add food item to restaurant
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/item");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // TODO: Optionally check if userId owns restaurantId
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) { sb.append(line); }
+                }
+                String json = sb.toString();
+                FoodItem item = mapper.readValue(json, FoodItem.class);
+                item.setVendorId(restaurantId);
+                try { foodItemDao.addFoodItem(item); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 201, item);
+                return;
+            } else if (method.equalsIgnoreCase("PUT") && path.matches("/restaurants/\\d+/item/\\d+")) {
+                // Edit food item
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/item/");
+                int itemId = extractIdFromPath(path, "/item/");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // TODO: Optionally check if userId owns restaurantId
+                FoodItem item;
+                try { item = foodItemDao.getFoodItemById(itemId); } catch (Exception e) { sendJson(exchange, 404, new ErrorResponse("Item not found")); return; }
+                if (item == null || item.getVendorId() != restaurantId) { sendJson(exchange, 404, new ErrorResponse("Item not found for this restaurant")); return; }
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) { sb.append(line); }
+                }
+                String json = sb.toString();
+                FoodItem update = mapper.readValue(json, FoodItem.class);
+                item.setName(update.getName());
+                item.setDescription(update.getDescription());
+                item.setPrice(update.getPrice());
+                item.setSupply(update.getSupply());
+                item.setKeywords(update.getKeywords());
+                item.setImageBase64(update.getImageBase64());
+                try { foodItemDao.updateFoodItem(item); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, item);
+                return;
+            } else if (method.equalsIgnoreCase("DELETE") && path.matches("/restaurants/\\d+/item/\\d+")) {
+                // Delete food item
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/item/");
+                int itemId = extractIdFromPath(path, "/item/");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // TODO: Optionally check if userId owns restaurantId
+                FoodItem item;
+                try { item = foodItemDao.getFoodItemById(itemId); } catch (Exception e) { sendJson(exchange, 404, new ErrorResponse("Item not found")); return; }
+                if (item == null || item.getVendorId() != restaurantId) { sendJson(exchange, 404, new ErrorResponse("Item not found for this restaurant")); return; }
+                try { foodItemDao.deleteFoodItem(itemId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, Map.of("message", "Item deleted successfully"));
+                return;
+            }
+            else {
                 // Path/method not matched
                 sendJson(exchange, 404, new ErrorResponse("Not Found"));
             }
@@ -182,5 +268,18 @@ public class RestaurantHandler implements HttpHandler {
         private final String error;
         public ErrorResponse(String error) { this.error = error; }
         public String getError() { return error; }
+    }
+
+    // Helper to extract IDs from path
+    private int extractIdFromPath(String path, String prefix, String suffix) {
+        String temp = path.substring(prefix.length());
+        if (suffix != null && !suffix.isEmpty()) {
+            temp = temp.substring(0, temp.indexOf(suffix));
+        }
+        return Integer.parseInt(temp.replaceAll("[^0-9]", ""));
+    }
+    private int extractIdFromPath(String path, String prefix) {
+        String temp = path.substring(path.indexOf(prefix) + prefix.length());
+        return Integer.parseInt(temp.replaceAll("[^0-9]", ""));
     }
 } 

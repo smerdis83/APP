@@ -41,7 +41,7 @@ public class AuthService {
         String passwordHash = BCrypt.withDefaults().hashToString(12, password.toCharArray());
 
         // 4) Create User and save
-        User user = new User(fullName, phone, email, passwordHash, role);
+        User user = new User(fullName, phone, email, passwordHash, role, null, null, null);
         userDao.createUser(user);
         return user;
     }
@@ -72,5 +72,9 @@ public class AuthService {
 
         // 3) Generate JWT with user ID and role
         return JwtUtil.generateToken(user.getId(), user.getRole().name());
+    }
+
+    public User getUserByPhone(String phone) throws SQLException {
+        return userDao.findByPhone(phone);
     }
 } 

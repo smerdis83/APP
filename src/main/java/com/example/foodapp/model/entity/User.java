@@ -15,24 +15,31 @@ public class User {
     private boolean enabled;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String address;
+    private String profileImageBase64;
+    private BankInfo bankInfo;
 
     // Empty constructor
     public User() { }
 
     // Constructor for creating a new user before knowing the ID
-    public User(String fullName, String phone, String email, String passwordHash, Role role) {
+    public User(String fullName, String phone, String email, String passwordHash, Role role, String address, String profileImageBase64, BankInfo bankInfo) {
         this.fullName = fullName;
         this.phone = phone;
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
         this.enabled = true;
+        this.address = address;
+        this.profileImageBase64 = profileImageBase64;
+        this.bankInfo = bankInfo;
     }
 
     // Full constructor (including ID and timestamps)
     public User(int id, String fullName, String phone, String email, String passwordHash,
                 Role role, boolean enabled,
-                LocalDateTime createdAt, LocalDateTime updatedAt) {
+                LocalDateTime createdAt, LocalDateTime updatedAt,
+                String address, String profileImageBase64, BankInfo bankInfo) {
         this.id = id;
         this.fullName = fullName;
         this.phone = phone;
@@ -42,6 +49,9 @@ public class User {
         this.enabled = enabled;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.address = address;
+        this.profileImageBase64 = profileImageBase64;
+        this.bankInfo = bankInfo;
     }
 
     // Getters and setters
@@ -106,6 +116,30 @@ public class User {
     }
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public String getProfileImageBase64() { return profileImageBase64; }
+    public void setProfileImageBase64(String profileImageBase64) { this.profileImageBase64 = profileImageBase64; }
+
+    public BankInfo getBankInfo() { return bankInfo; }
+    public void setBankInfo(BankInfo bankInfo) { this.bankInfo = bankInfo; }
+
+    // Inner class for bank info
+    public static class BankInfo {
+        private String bankName;
+        private String accountNumber;
+        public BankInfo() {}
+        public BankInfo(String bankName, String accountNumber) {
+            this.bankName = bankName;
+            this.accountNumber = accountNumber;
+        }
+        public String getBankName() { return bankName; }
+        public void setBankName(String bankName) { this.bankName = bankName; }
+        public String getAccountNumber() { return accountNumber; }
+        public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
     }
 
     @Override
