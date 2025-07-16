@@ -1,5 +1,6 @@
 package com.example.foodapp.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.util.List;
 
 public class FoodItem {
@@ -9,7 +10,9 @@ public class FoodItem {
     private int price;
     private int supply;
     private List<String> keywords;
+    @JsonAlias({"vendor_id", "vendorId"})
     private int vendorId; // restaurant/owner id
+    @JsonAlias({"image_base64", "imageBase64"})
     private String imageBase64;
 
     public FoodItem() {}

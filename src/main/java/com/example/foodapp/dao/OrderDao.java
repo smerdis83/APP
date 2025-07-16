@@ -108,6 +108,33 @@ public class OrderDao {
         return orders;
     }
 
+    // Returns all orders for a given restaurant (vendor)
+    public List<Order> getOrdersByVendor(int vendorId) throws SQLException {
+        String sql = "SELECT * FROM orders WHERE vendor_id = ? ORDER BY created_at DESC";
+        List<Order> orders = new ArrayList<>();
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, vendorId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapRowToOrder(rs));
+                }
+            }
+        }
+        return orders;
+    }
+
+    // Updates the status of an order
+    public void updateOrderStatus(int orderId, String newStatus) throws SQLException {
+        String sql = "UPDATE orders SET status = ? WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, orderId);
+            ps.executeUpdate();
+        }
+    }
+
     private Order mapRowToOrder(ResultSet rs) throws SQLException {
         Order order = new Order();
         order.setId(rs.getInt("id"));

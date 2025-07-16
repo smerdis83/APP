@@ -7,6 +7,7 @@ import com.example.foodapp.model.entity.OrderItem;
 import com.example.foodapp.model.entity.FoodItem;
 import com.example.foodapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -28,6 +29,7 @@ public class OrderHandler implements HttpHandler {
     public OrderHandler() {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
+        this.mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     }
 
     @Override
@@ -59,8 +61,9 @@ public class OrderHandler implements HttpHandler {
                 String json = sb.toString();
                 Order order = mapper.readValue(json, Order.class);
                 order.setCustomerId(userId);
-                // Price calculation logic
+                // Price calculation logic & inventory check
                 int rawPrice = 0;
+                java.util.Map<Integer, Integer> toReduce = new java.util.HashMap<>(); // item_id -> quantity
                 for (OrderItem oi : order.getItems()) {
                     FoodItem fi;
                     try {
@@ -70,8 +73,23 @@ public class OrderHandler implements HttpHandler {
                         sendJson(exchange, 500, Map.of("error", "Failed to fetch item: " + oi.getItem_id()));
                         return;
                     }
-                    System.out.println("OrderItem: id=" + oi.getItem_id() + ", quantity=" + oi.getQuantity() + ", price=" + fi.getPrice());
+                    if (oi.getQuantity() > fi.getSupply()) {
+                        sendJson(exchange, 409, Map.of("error", "Insufficient stock for item_id: " + oi.getItem_id()));
+                        return;
+                    }
+                    toReduce.put(oi.getItem_id(), oi.getQuantity());
                     rawPrice += fi.getPrice() * oi.getQuantity();
+                }
+                // All items have enough stock, reduce supply
+                for (Map.Entry<Integer, Integer> entry : toReduce.entrySet()) {
+                    try {
+                        FoodItem fi = foodItemDao.getFoodItemById(entry.getKey());
+                        fi.setSupply(fi.getSupply() - entry.getValue());
+                        foodItemDao.updateFoodItem(fi);
+                    } catch (Exception e) {
+                        sendJson(exchange, 500, Map.of("error", "Failed to update stock for item_id: " + entry.getKey()));
+                        return;
+                    }
                 }
                 order.setRawPrice(rawPrice);
                 order.setTaxFee(0); // You can add logic here

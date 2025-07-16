@@ -8,6 +8,7 @@ import com.example.foodapp.model.entity.Restaurant;
 import com.example.foodapp.model.entity.Menu;
 import com.example.foodapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -23,6 +24,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import com.example.foodapp.model.entity.Order;
 
 public class RestaurantHandler implements HttpHandler {
     private final ObjectMapper mapper;
@@ -33,6 +35,7 @@ public class RestaurantHandler implements HttpHandler {
     public RestaurantHandler() {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
+        this.mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     }
 
     @Override
@@ -359,6 +362,113 @@ public class RestaurantHandler implements HttpHandler {
                 }
                 try { menuDao.addItemToMenu(restaurantId, title, itemId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
                 sendJson(exchange, 200, Map.of("message", "Item added to menu"));
+                return;
+            }
+            // --- NEW: Public GET /restaurants/{restaurantId}/menus ---
+            else if ("GET".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+/menus")) {
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/menus");
+                List<Menu> menus;
+                try {
+                    menus = menuDao.getMenusByRestaurant(restaurantId);
+                } catch (Exception e) {
+                    sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage()));
+                    return;
+                }
+                sendJson(exchange, 200, menus);
+                return;
+            }
+            // --- NEW: Public GET /restaurants/{restaurantId}/menus/{menuTitle}/items ---
+            else if ("GET".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+/menus/.+/items")) {
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/menus/");
+                String rest = path.substring(path.indexOf("/menus/") + 7); // after /menus/
+                String[] parts = rest.split("/items");
+                String menuTitle = parts[0];
+                Menu menu;
+                try {
+                    menu = menuDao.getMenu(restaurantId, menuTitle);
+                } catch (Exception e) {
+                    sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage()));
+                    return;
+                }
+                if (menu == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Menu not found"));
+                    return;
+                }
+                List<FoodItem> items = new java.util.ArrayList<>();
+                for (Integer itemId : menu.getItemIds()) {
+                    try {
+                        FoodItem item = foodItemDao.getFoodItemById(itemId);
+                        if (item != null) items.add(item);
+                    } catch (Exception e) {
+                        // skip missing/broken items
+                    }
+                }
+                sendJson(exchange, 200, items);
+                return;
+            }
+            // --- NEW: Seller GET /restaurants/{restaurant_id}/orders ---
+            else if ("GET".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+/orders")) {
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/orders");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // Check ownership
+                Restaurant restaurant = null;
+                try { restaurant = restaurantDao.findById(restaurantId); } catch (Exception e) { /* ignore */ }
+                if (restaurant == null || restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+                List<Order> orders;
+                try { orders = new com.example.foodapp.dao.OrderDao().getOrdersByVendor(restaurantId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, orders);
+                return;
+            }
+            // --- NEW: Seller PATCH /restaurants/orders/{order_id} ---
+            else if ("PATCH".equalsIgnoreCase(method) && path.matches("/restaurants/orders/\\d+")) {
+                int orderId = extractIdFromPath(path, "/restaurants/orders/");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // Find order and check ownership
+                Order order;
+                try { order = new com.example.foodapp.dao.OrderDao().getOrderById(orderId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                if (order == null) { sendJson(exchange, 404, new ErrorResponse("Order not found")); return; }
+                Restaurant restaurant = null;
+                try { restaurant = restaurantDao.findById(order.getVendorId()); } catch (Exception e) { /* ignore */ }
+                if (restaurant == null || restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+                // Parse status from request body
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) { sb.append(line); }
+                }
+                String json = sb.toString();
+                Map<String, Object> req = mapper.readValue(json, Map.class);
+                if (!req.containsKey("status")) { sendJson(exchange, 400, new ErrorResponse("Missing status")); return; }
+                String newStatus = req.get("status").toString();
+                // Optionally: validate allowed status transitions here
+                order.setStatus(newStatus);
+                try { new com.example.foodapp.dao.OrderDao().updateOrderStatus(orderId, newStatus); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, Map.of("message", "Order status updated", "order_id", orderId, "new_status", newStatus));
                 return;
             }
             else {
