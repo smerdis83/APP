@@ -135,6 +135,78 @@ public class OrderDao {
         }
     }
 
+    // Returns all available deliveries for couriers (status = 'served' and courier_id IS NULL)
+    public List<Order> getAvailableDeliveries() throws SQLException {
+        String sql = "SELECT * FROM orders WHERE status = ? AND courier_id IS NULL ORDER BY created_at ASC";
+        List<Order> orders = new ArrayList<>();
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, "served"); // or 'ready' if that's your status
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapRowToOrder(rs));
+                }
+            }
+        }
+        return orders;
+    }
+
+    // Assigns a courier to an order and updates status, only if available
+    public Order assignCourierToOrder(int orderId, int courierId, String newStatus) throws SQLException {
+        String sql = "UPDATE orders SET courier_id = ?, status = ? WHERE id = ? AND courier_id IS NULL AND status = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, courierId);
+            ps.setString(2, newStatus);
+            ps.setInt(3, orderId);
+            ps.setString(4, "served");
+            int updated = ps.executeUpdate();
+            if (updated == 0) {
+                // Either not found, already assigned, or wrong status
+                return null;
+            }
+        }
+        // Return the updated order
+        return getOrderById(orderId);
+    }
+
+    // Updates courier status to 'received' or 'delivered' if courier is assigned and current status is correct
+    public Order updateCourierOrderStatus(int orderId, int courierId, String newStatus) throws SQLException {
+        String requiredCurrentStatus = null;
+        if ("received".equals(newStatus)) requiredCurrentStatus = "accepted";
+        else if ("delivered".equals(newStatus)) requiredCurrentStatus = "received";
+        else return null;
+        String sql = "UPDATE orders SET status = ? WHERE id = ? AND courier_id = ? AND status = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, orderId);
+            ps.setInt(3, courierId);
+            ps.setString(4, requiredCurrentStatus);
+            int updated = ps.executeUpdate();
+            if (updated == 0) {
+                return null;
+            }
+        }
+        return getOrderById(orderId);
+    }
+
+    // Returns all orders for a given courier
+    public List<Order> getOrdersByCourier(int courierId) throws SQLException {
+        String sql = "SELECT * FROM orders WHERE courier_id = ? ORDER BY created_at DESC";
+        List<Order> orders = new ArrayList<>();
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, courierId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapRowToOrder(rs));
+                }
+            }
+        }
+        return orders;
+    }
+
     private Order mapRowToOrder(ResultSet rs) throws SQLException {
         Order order = new Order();
         order.setId(rs.getInt("id"));

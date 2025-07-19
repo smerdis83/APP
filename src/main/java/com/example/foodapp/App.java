@@ -8,6 +8,7 @@ import com.example.foodapp.handler.AuthHandler;
 import com.example.foodapp.handler.ProfileHandler;
 import com.example.foodapp.handler.RestaurantHandler;
 import com.example.foodapp.handler.OrderHandler;
+import com.example.foodapp.handler.CourierHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.sql.Connection;
@@ -39,6 +40,9 @@ public class App {
 
         OrderHandler orderHandler = new OrderHandler();
         server.createContext("/orders", orderHandler);
+
+        CourierHandler courierHandler = new CourierHandler();
+        server.createContext("/deliveries", courierHandler);
 
         // 3) Use a thread pool to handle requests
         server.setExecutor(Executors.newFixedThreadPool(8));

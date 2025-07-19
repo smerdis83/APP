@@ -466,6 +466,10 @@ public class RestaurantHandler implements HttpHandler {
                 if (!req.containsKey("status")) { sendJson(exchange, 400, new ErrorResponse("Missing status")); return; }
                 String newStatus = req.get("status").toString();
                 // Optionally: validate allowed status transitions here
+                if (!("accepted".equals(newStatus) || "rejected".equals(newStatus) || "served".equals(newStatus))) {
+                    sendJson(exchange, 400, new ErrorResponse("Invalid status: must be one of 'accepted', 'rejected', or 'served'"));
+                    return;
+                }
                 order.setStatus(newStatus);
                 try { new com.example.foodapp.dao.OrderDao().updateOrderStatus(orderId, newStatus); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
                 sendJson(exchange, 200, Map.of("message", "Order status updated", "order_id", orderId, "new_status", newStatus));
