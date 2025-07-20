@@ -18,6 +18,7 @@ public class User {
     private String address;
     private String profileImageBase64;
     private BankInfo bankInfo;
+    private int walletBalance;
 
     // Empty constructor
     public User() { }
@@ -126,6 +127,9 @@ public class User {
 
     public BankInfo getBankInfo() { return bankInfo; }
     public void setBankInfo(BankInfo bankInfo) { this.bankInfo = bankInfo; }
+
+    public int getWalletBalance() { return walletBalance; }
+    public void setWalletBalance(int walletBalance) { this.walletBalance = walletBalance; }
 
     // Inner class for bank info
     public static class BankInfo {

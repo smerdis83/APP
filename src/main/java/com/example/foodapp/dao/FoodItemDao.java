@@ -114,6 +114,19 @@ public class FoodItemDao {
         }
     }
 
+    public List<FoodItem> getAllFoodItems() throws SQLException {
+        List<FoodItem> items = new ArrayList<>();
+        String sql = "SELECT * FROM food_items";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                items.add(mapRowToFoodItem(rs));
+            }
+        }
+        return items;
+    }
+
     private FoodItem mapRowToFoodItem(ResultSet rs) throws SQLException {
         FoodItem item = new FoodItem();
         item.setId(rs.getInt("id"));

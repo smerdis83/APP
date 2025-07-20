@@ -153,4 +153,42 @@ public class RestaurantDao {
         }
         return null;
     }
+
+    /**
+     * Updates all editable fields of a restaurant by id.
+     * Used for PUT /restaurants/{id}.
+     */
+    public void updateRestaurant(Restaurant restaurant) throws SQLException {
+        String sql = "UPDATE restaurants SET name = ?, address = ?, phone = ?, logo_base64 = ?, tax_fee = ?, additional_fee = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, restaurant.getName());
+            ps.setString(2, restaurant.getAddress());
+            ps.setString(3, restaurant.getPhone());
+            ps.setString(4, restaurant.getLogoBase64());
+            ps.setInt(5, restaurant.getTaxFee());
+            ps.setInt(6, restaurant.getAdditionalFee());
+            ps.setInt(7, restaurant.getId());
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Updating restaurant failed, no rows affected.");
+            }
+        }
+    }
+
+    /**
+     * Deletes a restaurant by its ID.
+     * Used for DELETE /restaurants/{id}.
+     */
+    public void deleteRestaurant(int id) throws SQLException {
+        String sql = "DELETE FROM restaurants WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Deleting restaurant failed, no rows affected.");
+            }
+        }
+    }
 } 

@@ -3,6 +3,7 @@ package com.example.foodapp.model.entity;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.example.foodapp.model.entity.OrderItem;
+import com.example.foodapp.model.entity.OrderStatusHistory;
 
 public class Order {
     private int id;
@@ -20,6 +21,7 @@ public class Order {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<OrderStatusHistory> statusHistory;
 
     public Order() {}
 
@@ -86,6 +88,9 @@ public class Order {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public List<OrderStatusHistory> getStatusHistory() { return statusHistory; }
+    public void setStatusHistory(List<OrderStatusHistory> statusHistory) { this.statusHistory = statusHistory; }
 
     @Override
     public String toString() {

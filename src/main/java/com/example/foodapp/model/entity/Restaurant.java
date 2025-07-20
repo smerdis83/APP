@@ -7,6 +7,9 @@ public class Restaurant {
     private String name;
     private String address;
     private String phone;
+    private String logoBase64;
+    private int taxFee;
+    private int additionalFee;
     private int ownerId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -61,6 +64,27 @@ public class Restaurant {
     }
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getLogoBase64() {
+        return logoBase64;
+    }
+    public void setLogoBase64(String logoBase64) {
+        this.logoBase64 = logoBase64;
+    }
+
+    public int getTaxFee() {
+        return taxFee;
+    }
+    public void setTaxFee(int taxFee) {
+        this.taxFee = taxFee;
+    }
+
+    public int getAdditionalFee() {
+        return additionalFee;
+    }
+    public void setAdditionalFee(int additionalFee) {
+        this.additionalFee = additionalFee;
     }
 
     public int getOwnerId() {

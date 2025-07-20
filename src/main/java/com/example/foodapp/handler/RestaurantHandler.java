@@ -470,9 +470,171 @@ public class RestaurantHandler implements HttpHandler {
                     sendJson(exchange, 400, new ErrorResponse("Invalid status: must be one of 'accepted', 'rejected', or 'served'"));
                     return;
                 }
+                // Only allow accepting if order is waiting vendor (i.e., paid)
+                if ("accepted".equals(newStatus) && !"waiting vendor".equals(order.getStatus())) {
+                    sendJson(exchange, 409, new ErrorResponse("Order must be paid before it can be accepted"));
+                    return;
+                }
+                // Only allow serving if order is accepted
+                if ("served".equals(newStatus) && !"accepted".equals(order.getStatus())) {
+                    sendJson(exchange, 409, new ErrorResponse("Order must be accepted before it can be served"));
+                    return;
+                }
                 order.setStatus(newStatus);
-                try { new com.example.foodapp.dao.OrderDao().updateOrderStatus(orderId, newStatus); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                try {
+                    new com.example.foodapp.dao.OrderDao().updateOrderStatus(orderId, newStatus);
+                    new com.example.foodapp.dao.OrderDao().insertOrderStatusHistory(orderId, newStatus, "seller");
+                } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
                 sendJson(exchange, 200, Map.of("message", "Order status updated", "order_id", orderId, "new_status", newStatus));
+                return;
+            }
+            // --- NEW: Seller PUT /restaurants/{id} ---
+            else if ("PUT".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+")) {
+                int restaurantId = extractIdFromPath(path, "/restaurants/");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // Check ownership
+                Restaurant restaurant = null;
+                try { restaurant = restaurantDao.findById(restaurantId); } catch (Exception e) { /* ignore */ }
+                if (restaurant == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Restaurant not found"));
+                    return;
+                }
+                if (restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+                String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+                if (contentType == null || !contentType.toLowerCase().contains("application/json")) {
+                    sendJson(exchange, 415, new ErrorResponse("Unsupported Media Type: Content-Type must be application/json"));
+                    return;
+                }
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) { sb.append(line); }
+                }
+                String json = sb.toString();
+                Map<String, Object> updateReq;
+                try { updateReq = mapper.readValue(json, Map.class); } catch (Exception e) { sendJson(exchange, 400, new ErrorResponse("Invalid input: " + e.getMessage())); return; }
+                if (updateReq.isEmpty()) {
+                    sendJson(exchange, 400, new ErrorResponse("No updatable fields provided"));
+                    return;
+                }
+                // Update fields if present
+                if (updateReq.containsKey("name")) restaurant.setName((String) updateReq.get("name"));
+                if (updateReq.containsKey("address")) restaurant.setAddress((String) updateReq.get("address"));
+                if (updateReq.containsKey("phone")) restaurant.setPhone((String) updateReq.get("phone"));
+                if (updateReq.containsKey("logoBase64")) restaurant.setLogoBase64((String) updateReq.get("logoBase64"));
+                if (updateReq.containsKey("tax_fee")) restaurant.setTaxFee((Integer) updateReq.get("tax_fee"));
+                if (updateReq.containsKey("additional_fee")) restaurant.setAdditionalFee((Integer) updateReq.get("additional_fee"));
+                try { restaurantDao.updateRestaurant(restaurant); } catch (Exception e) {
+                    if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate")) {
+                        sendJson(exchange, 409, new ErrorResponse("Duplicate restaurant info"));
+                    } else {
+                        sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage()));
+                    }
+                    return;
+                }
+                sendJson(exchange, 200, restaurant);
+                return;
+            }
+            // --- YAML-COMPLIANT: Seller PUT /restaurants/{id}/menu/{title} (add item to menu only) ---
+            else if ("PUT".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+/menu/.+")) {
+                int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu/");
+                String title = path.substring(path.indexOf("/menu/") + 6);
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // Check ownership
+                Restaurant restaurant = null;
+                try { restaurant = restaurantDao.findById(restaurantId); } catch (Exception e) { /* ignore */ }
+                if (restaurant == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Restaurant not found"));
+                    return;
+                }
+                if (restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+                Menu menu = null;
+                try { menu = menuDao.getMenu(restaurantId, title); } catch (Exception e) { /* ignore */ }
+                if (menu == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Menu not found"));
+                    return;
+                }
+                String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+                if (contentType == null || !contentType.toLowerCase().contains("application/json")) {
+                    sendJson(exchange, 415, new ErrorResponse("Unsupported Media Type: Content-Type must be application/json"));
+                    return;
+                }
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                    String line; while ((line = reader.readLine()) != null) { sb.append(line); }
+                }
+                String json = sb.toString();
+                Map<String, Object> req;
+                try { req = mapper.readValue(json, Map.class); } catch (Exception e) { sendJson(exchange, 400, new ErrorResponse("Invalid input: " + e.getMessage())); return; }
+                if (!req.containsKey("item_id")) { sendJson(exchange, 400, new ErrorResponse("Missing item_id")); return; }
+                int itemId = (int) req.get("item_id");
+                // Validate item exists
+                FoodItem foodItem = null;
+                try { foodItem = foodItemDao.getFoodItemById(itemId); } catch (Exception e) { /* ignore */ }
+                if (foodItem == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Item not found"));
+                    return;
+                }
+                // Check if menu exists (already done above)
+                try { menuDao.addItemToMenu(restaurantId, title, itemId); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
+                sendJson(exchange, 200, Map.of("message", "Item added to menu"));
+                return;
+            }
+            // --- NEW: Seller DELETE /restaurants/{id} ---
+            else if ("DELETE".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+")) {
+                int restaurantId = extractIdFromPath(path, "/restaurants/");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try { claims = JwtUtil.parseToken(token); } catch (Exception e) { sendJson(exchange, 401, new ErrorResponse("Invalid token")); return; }
+                String role = claims.get("role", String.class);
+                int userId = Integer.parseInt(claims.getSubject());
+                if (!"SELLER".equals(role)) { sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller")); return; }
+                // Check ownership
+                Restaurant restaurant = null;
+                try { restaurant = restaurantDao.findById(restaurantId); } catch (Exception e) { /* ignore */ }
+                if (restaurant == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Restaurant not found"));
+                    return;
+                }
+                if (restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+                try { restaurantDao.deleteRestaurant(restaurantId); } catch (Exception e) {
+                    sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage()));
+                    return;
+                }
+                sendJson(exchange, 200, Map.of("message", "Restaurant deleted successfully"));
                 return;
             }
             else {

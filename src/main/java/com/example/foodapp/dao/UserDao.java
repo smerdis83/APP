@@ -6,6 +6,8 @@ import com.example.foodapp.util.JdbcUtil;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Data Access Object for the 'users' table, using plain JDBC.
@@ -33,6 +35,7 @@ public class UserDao {
                 "profile_image_base64 LONGTEXT, " +
                 "bank_name VARCHAR(100), " +
                 "account_number VARCHAR(100), " +
+                "wallet_balance INT NOT NULL DEFAULT 0, " +
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                 "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
                 ")";
@@ -40,6 +43,12 @@ public class UserDao {
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.executeUpdate();
         }
+        // Ensure wallet_balance column exists (for upgrades)
+        try (Connection connection = JdbcUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS wallet_balance INT NOT NULL DEFAULT 0")) {
+            statement.executeUpdate();
+        } catch (SQLException ignore) {}
     }
     /**
      * Inserts a new user into the database.
@@ -119,6 +128,20 @@ public class UserDao {
         }
     }
 
+    public List<User> findAll() throws SQLException {
+        String sql = "SELECT * FROM users ORDER BY created_at DESC";
+        List<User> users = new ArrayList<>();
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    users.add(extractUserFromResultSet(rs));
+                }
+            }
+        }
+        return users;
+    }
+
     /**
      * Updates user profile fields (full_name, phone, email) by user ID.
      */
@@ -141,6 +164,27 @@ public class UserDao {
         }
     }
 
+    public void updateWalletBalance(int userId, int newBalance) throws SQLException {
+        String sql = "UPDATE users SET wallet_balance = ? WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, newBalance);
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+        }
+    }
+    public int getWalletBalance(int userId) throws SQLException {
+        String sql = "SELECT wallet_balance FROM users WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("wallet_balance");
+            }
+        }
+        return 0;
+    }
+
     /**
      * Helper method to build a User object from a ResultSet row.
      */
@@ -156,11 +200,15 @@ public class UserDao {
         String profileImageBase64 = rs.getString("profile_image_base64");
         String bankName = rs.getString("bank_name");
         String accountNumber = rs.getString("account_number");
+        int walletBalance = 0;
+        try { walletBalance = rs.getInt("wallet_balance"); } catch (Exception ignore) {}
         User.BankInfo bankInfo = (bankName != null || accountNumber != null) ? new User.BankInfo(bankName, accountNumber) : null;
         java.sql.Timestamp createdTs = rs.getTimestamp("created_at");
         java.sql.Timestamp updatedTs = rs.getTimestamp("updated_at");
         LocalDateTime createdAt = createdTs != null ? createdTs.toLocalDateTime() : null;
         LocalDateTime updatedAt = updatedTs != null ? updatedTs.toLocalDateTime() : null;
-        return new User(userId, fullName, phone, email, passwordHash, role, enabled, createdAt, updatedAt, address, profileImageBase64, bankInfo);
+        User user = new User(userId, fullName, phone, email, passwordHash, role, enabled, createdAt, updatedAt, address, profileImageBase64, bankInfo);
+        user.setWalletBalance(walletBalance);
+        return user;
     }
 } 

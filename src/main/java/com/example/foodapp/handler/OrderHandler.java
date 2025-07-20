@@ -2,9 +2,12 @@ package com.example.foodapp.handler;
 
 import com.example.foodapp.dao.OrderDao;
 import com.example.foodapp.dao.FoodItemDao;
+import com.example.foodapp.dao.UserDao;
 import com.example.foodapp.model.entity.Order;
 import com.example.foodapp.model.entity.OrderItem;
 import com.example.foodapp.model.entity.FoodItem;
+import com.example.foodapp.model.entity.User;
+import com.example.foodapp.model.entity.Transaction;
 import com.example.foodapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -98,6 +101,7 @@ public class OrderHandler implements HttpHandler {
                 order.setPayPrice(rawPrice); // For now, just rawPrice
                 order.setStatus("submitted");
                 orderDao.addOrder(order);
+                orderDao.insertOrderStatusHistory(order.getId(), "submitted", "buyer");
                 sendJson(exchange, 200, order);
                 return;
             } else if (method.equalsIgnoreCase("GET") && path.matches("/orders/\\d+")) {
@@ -109,7 +113,26 @@ public class OrderHandler implements HttpHandler {
                     sendJson(exchange, 404, Map.of("error", "Order not found"));
                     return;
                 }
-                sendJson(exchange, 200, order);
+                // If a courier is assigned, include their info in the response (as 'courier_info')
+                Map<String, Object> response = mapper.convertValue(order, Map.class);
+                if (order.getCourierId() != null) {
+                    try {
+                        User courier = new UserDao().findById(order.getCourierId());
+                        if (courier != null) {
+                            response.put("courier_info", Map.of(
+                                "id", courier.getId(),
+                                "full_name", courier.getFullName(),
+                                "phone", courier.getPhone()
+                            ));
+                        }
+                    } catch (Exception e) { /* ignore, just omit courier_info if error */ }
+                }
+                // Add status history timeline
+                try {
+                    List<com.example.foodapp.model.entity.OrderStatusHistory> history = orderDao.getOrderStatusHistory(order.getId());
+                    response.put("status_history", history);
+                } catch (Exception e) { /* ignore, just omit if error */ }
+                sendJson(exchange, 200, response);
                 return;
             } else if (method.equalsIgnoreCase("GET") && "/orders/history".equals(path)) {
                 // Get order history (buyer only)

@@ -115,6 +115,8 @@ public class AuthHandler implements HttpHandler {
                     String token = authService.login(phone, password);
                     var user = authService.getUserByPhone(phone);
                     user.setPasswordHash(null);
+                    // Ensure walletBalance is set
+                    user.setWalletBalance(new com.example.foodapp.dao.UserDao().getWalletBalance(user.getId()));
                     sendJson(exchange, 200, Map.of(
                         "message", "User logged in successfully",
                         "token", token,
