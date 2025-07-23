@@ -115,6 +115,20 @@ public class OrderHandler implements HttpHandler {
                 }
                 // If a courier is assigned, include their info in the response (as 'courier_info')
                 Map<String, Object> response = mapper.convertValue(order, Map.class);
+                // Add item_details: [{name, quantity}]
+                java.util.List<Map<String, Object>> itemDetails = new java.util.ArrayList<>();
+                if (order.getItems() != null) {
+                    for (OrderItem oi : order.getItems()) {
+                        try {
+                            FoodItem fi = foodItemDao.getFoodItemById(oi.getItem_id());
+                            String name = (fi != null) ? fi.getName() : ("Item #" + oi.getItem_id());
+                            itemDetails.add(Map.of("name", name, "quantity", oi.getQuantity()));
+                        } catch (Exception e) {
+                            itemDetails.add(Map.of("name", "Item #" + oi.getItem_id(), "quantity", oi.getQuantity()));
+                        }
+                    }
+                }
+                response.put("item_details", itemDetails);
                 if (order.getCourierId() != null) {
                     try {
                         User courier = new UserDao().findById(order.getCourierId());
