@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import com.example.foodapp.model.entity.Order;
+import java.net.URLDecoder;
 
 public class RestaurantHandler implements HttpHandler {
     private final ObjectMapper mapper;
@@ -281,6 +282,7 @@ public class RestaurantHandler implements HttpHandler {
                 String rest = path.substring(path.indexOf("/menu/") + 6);
                 String[] parts = rest.split("/");
                 String title = parts[0];
+                title = URLDecoder.decode(title, StandardCharsets.UTF_8);
                 int itemId = Integer.parseInt(parts[1]);
                 String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -301,6 +303,7 @@ public class RestaurantHandler implements HttpHandler {
                 // Delete a menu by title
                 int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu/");
                 String title = path.substring(path.indexOf("/menu/") + 6);
+                title = URLDecoder.decode(title, StandardCharsets.UTF_8);
                 String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
@@ -326,6 +329,7 @@ public class RestaurantHandler implements HttpHandler {
                 // Add item to a menu
                 int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu/");
                 String title = path.substring(path.indexOf("/menu/") + 6);
+                title = URLDecoder.decode(title, StandardCharsets.UTF_8);
                 String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
@@ -383,6 +387,7 @@ public class RestaurantHandler implements HttpHandler {
                 String rest = path.substring(path.indexOf("/menus/") + 7); // after /menus/
                 String[] parts = rest.split("/items");
                 String menuTitle = parts[0];
+                menuTitle = URLDecoder.decode(menuTitle, StandardCharsets.UTF_8);
                 Menu menu;
                 try {
                     menu = menuDao.getMenu(restaurantId, menuTitle);
@@ -551,6 +556,7 @@ public class RestaurantHandler implements HttpHandler {
             else if ("PUT".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+/menu/.+")) {
                 int restaurantId = extractIdFromPath(path, "/restaurants/", "/menu/");
                 String title = path.substring(path.indexOf("/menu/") + 6);
+                title = URLDecoder.decode(title, StandardCharsets.UTF_8);
                 String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
