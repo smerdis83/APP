@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="CENTER" prefWidth="500.0" prefHeight="400.0" fx:controller="com.example.foodapp.controller.MenuListController">
+    <children>
+        <Label fx:id="restaurantLabel" style="-fx-font-size: 22px; -fx-font-weight: bold;" />
+        <ListView fx:id="menuList" prefWidth="400.0" prefHeight="250.0" />
+        <HBox spacing="10" alignment="CENTER">
+            <children>
+                <Button fx:id="addMenuBtn" text="Add Menu" />
+                <Button fx:id="backBtn" text="Back" />
+            </children>
+        </HBox>
+        <Label fx:id="messageLabel" style="-fx-text-fill: #e74c3c;" />
+    </children>
+</VBox> 

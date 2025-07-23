@@ -22,6 +22,7 @@ public class Order {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<OrderStatusHistory> statusHistory;
+    private Boolean useWallet;
 
     public Order() {}
 
@@ -91,6 +92,9 @@ public class Order {
 
     public List<OrderStatusHistory> getStatusHistory() { return statusHistory; }
     public void setStatusHistory(List<OrderStatusHistory> statusHistory) { this.statusHistory = statusHistory; }
+
+    public Boolean getUseWallet() { return useWallet; }
+    public void setUseWallet(Boolean useWallet) { this.useWallet = useWallet; }
 
     @Override
     public String toString() {

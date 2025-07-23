@@ -1,0 +1,131 @@
+/* Luxury Theme for Food Ordering App */
+
+.root {
+    -fx-font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+    -fx-background-color: linear-gradient(135deg, #232526 0%, #414345 100%);
+    -fx-text-fill: #f5f6fa;
+}
+
+.label {
+    -fx-font-size: 16px;
+    -fx-text-fill: #f5f6fa;
+    -fx-font-weight: 500;
+    -fx-effect: dropshadow(gaussian, #00000088, 2, 0.2, 0, 1);
+}
+
+.label.title {
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffd700;
+    -fx-effect: dropshadow(gaussian, #000000cc, 4, 0.4, 0, 2);
+}
+
+.text-field, .password-field, .combo-box {
+    -fx-background-color: #232526;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: #ffd700;
+    -fx-border-width: 1.5px;
+    -fx-text-fill: #f5f6fa;
+    -fx-font-size: 15px;
+    -fx-padding: 8 12 8 12;
+    -fx-effect: dropshadow(gaussian, #00000044, 2, 0.2, 0, 1);
+}
+
+.list-view {
+    -fx-background-color: #232526;
+    -fx-border-color: #ffd700;
+    -fx-border-radius: 12px;
+    -fx-control-inner-background: #232526;
+    -fx-cell-hover-color: #ffd70022;
+    -fx-padding: 8 0 8 0;
+}
+
+.button {
+    -fx-background-color: linear-gradient(90deg, #ffd700 0%, #ffb347 100%);
+    -fx-background-radius: 16px;
+    -fx-text-fill: #232526;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 28 10 28;
+    -fx-effect: dropshadow(gaussian, #00000088, 4, 0.3, 0, 2);
+    -fx-cursor: hand;
+    -fx-border-color: #fffbe6;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 16px;
+    -fx-transition: all 0.2s;
+}
+.button:hover {
+    -fx-background-color: linear-gradient(90deg, #ffe066 0%, #ffd700 100%);
+    -fx-text-fill: #232526;
+    -fx-effect: dropshadow(gaussian, #ffd70088, 8, 0.5, 0, 4);
+}
+
+.hyperlink {
+    -fx-text-fill: #ffd700;
+    -fx-underline: true;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+}
+.hyperlink:hover {
+    -fx-text-fill: #fffbe6;
+}
+
+.check-box {
+    -fx-font-size: 15px;
+    -fx-text-fill: #f5f6fa;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f5f6fa;
+    -fx-font-size: 15px;
+    -fx-padding: 8 12 8 12;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: #44444444;
+}
+.list-cell:selected {
+    -fx-background-color: linear-gradient(90deg, #ffd70044 0%, #ffb34744 100%);
+    -fx-text-fill: #232526;
+}
+
+.grid-pane, .vbox, .hbox {
+    -fx-background-color: transparent;
+}
+
+/* Scrollbar styling */
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: #232526;
+}
+.scroll-bar .thumb {
+    -fx-background-color: #ffd700;
+    -fx-background-radius: 8px;
+}
+
+/* Error/Message Label */
+.label.error {
+    -fx-text-fill: #ff4d4f;
+    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+}
+
+/* Profile and Order Details Special (use .mono-label in FXML for these) */
+.label.mono-label {
+    -fx-font-family: 'Fira Mono', 'Consolas', monospace;
+    -fx-font-size: 15px;
+    -fx-text-fill: #ffd700;
+}
+
+/* Dashboard role label (use .role-label in FXML for these) */
+.label.role-label {
+    -fx-text-fill: #ffb347;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+/* Make everything a bit more spaced and rounded */
+.vbox, .hbox, .grid-pane {
+    -fx-spacing: 18px;
+    -fx-padding: 18px;
+    -fx-background-radius: 18px;
+} 

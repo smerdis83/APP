@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.OrderHistoryController" alignment="CENTER" spacing="20" style="-fx-background-color: #f8f9fa;">
+    <padding>
+        <Insets top="40" right="40" bottom="40" left="40" />
+    </padding>
+    <children>
+        <Label text="Order History" styleClass="title" />
+        <Label fx:id="messageLabel" styleClass="error" />
+        <ListView fx:id="orderList" prefHeight="400" prefWidth="800" />
+        <Button fx:id="backBtn" text="Back to Dashboard" />
+    </children>
+</VBox> 

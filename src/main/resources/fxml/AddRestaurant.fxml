@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="CENTER" prefWidth="500.0" prefHeight="400.0" fx:controller="com.example.foodapp.controller.AddRestaurantController">
+    <children>
+        <Label text="Add New Restaurant" style="-fx-font-size: 28px; -fx-font-weight: bold;" />
+        <TextField fx:id="nameField" promptText="Restaurant Name (required)" prefWidth="300.0" />
+        <TextField fx:id="addressField" promptText="Address (required)" prefWidth="300.0" />
+        <TextField fx:id="phoneField" promptText="Phone (required)" prefWidth="300.0" />
+        <TextField fx:id="logoField" promptText="Logo (Base64 or URL, optional)" prefWidth="300.0" />
+        <TextField fx:id="taxFeeField" promptText="Tax Fee (optional, integer)" prefWidth="300.0" />
+        <TextField fx:id="additionalFeeField" promptText="Additional Fee (optional, integer)" prefWidth="300.0" />
+        <HBox spacing="10" alignment="CENTER">
+            <children>
+                <Button fx:id="addBtn" text="Add Restaurant" />
+                <Button fx:id="backBtn" text="Back" />
+            </children>
+        </HBox>
+        <Label fx:id="messageLabel" style="-fx-text-fill: #e74c3c;" />
+    </children>
+</VBox> 

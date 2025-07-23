@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="TOP_CENTER" prefHeight="800.0" prefWidth="1200.0" spacing="20" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.RestaurantPageController">
+    <children>
+        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-padding: 20 0 0 20;">
+            <children>
+                <Button fx:id="backBtn" text="Back" />
+                <ImageView fx:id="restaurantLogo" fitHeight="80.0" fitWidth="80.0" />
+                <Label fx:id="restaurantNameLabel" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-padding: 0 0 0 20;" />
+            </children>
+        </HBox>
+        <Label fx:id="messageLabel" style="-fx-text-fill: #e74c3c; -fx-font-size: 16px;" />
+        <!-- Remove TabPane for menu selection -->
+        <!-- Add menu navigation with Prev/Next buttons and menu name label -->
+        <HBox alignment="CENTER" spacing="10">
+            <children>
+                <Button fx:id="prevMenuBtn" text="Prev" />
+                <Label fx:id="menuNameLabel" style="-fx-font-size: 28px; -fx-font-weight: bold;" text="Menu" />
+                <Button fx:id="nextMenuBtn" text="Next" />
+            </children>
+        </HBox>
+        <HBox alignment="TOP_CENTER" spacing="40">
+            <children>
+                <!-- Food List -->
+                <VBox alignment="TOP_CENTER" spacing="10" style="-fx-background-color: #f8f8ff; -fx-border-color: #b0b0b0; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 20;">
+                    <children>
+                        <!-- The menuNameLabel above replaces the static 'Menu' label here -->
+                        <ListView fx:id="foodList" prefHeight="600.0" prefWidth="500.0" />
+                    </children>
+                </VBox>
+                <!-- Basket/Cart -->
+                <VBox alignment="TOP_CENTER" spacing="20" style="-fx-background-color: #f0fff0; -fx-border-color: #4caf50; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 20;">
+                    <children>
+                        <Label style="-fx-font-size: 28px; -fx-font-weight: bold;" text="Your Basket" />
+                        <ListView fx:id="basketList" prefHeight="400.0" prefWidth="350.0" />
+                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                            <children>
+                                <Label style="-fx-font-size: 20px;" text="Total:" />
+                                <Label fx:id="totalPrice" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+                            </children>
+                        </HBox>
+                        <Button fx:id="orderBtn" prefWidth="200.0" style="-fx-font-size: 22px; -fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold;" text="ORDER" />
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</VBox>

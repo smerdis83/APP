@@ -14,6 +14,7 @@ import com.example.foodapp.handler.AdminHandler;
 import com.example.foodapp.handler.VendorItemHandler;
 import com.example.foodapp.handler.FavoriteHandler;
 import com.example.foodapp.handler.RatingHandler;
+import com.example.foodapp.handler.AddressHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.sql.Connection;
@@ -72,6 +73,9 @@ public class App {
 
         RatingHandler ratingHandler = new RatingHandler();
         server.createContext("/ratings", ratingHandler);
+
+        AddressHandler addressHandler = new AddressHandler();
+        server.createContext("/addresses", addressHandler);
 
         // 3) Use a thread pool to handle requests
         server.setExecutor(Executors.newFixedThreadPool(8));

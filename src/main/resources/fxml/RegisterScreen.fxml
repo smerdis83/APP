@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.RegisterController" alignment="CENTER" spacing="20" style="-fx-background-color: #f8f9fa;">
+    <padding>
+        <Insets top="40" right="40" bottom="40" left="40" />
+    </padding>
+    <children>
+        <Label text="Register" style="-fx-font-size: 32px; -fx-font-weight: bold;" />
+        <GridPane hgap="10" vgap="10">
+            <children>
+                <Label text="Full Name:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                <TextField fx:id="nameField" promptText="Enter your full name" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+                <Label text="Phone:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+                <TextField fx:id="phoneField" promptText="Enter your phone number" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                <Label text="Password:" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+                <PasswordField fx:id="passwordField" promptText="Enter your password" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                <Label text="Role:" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+                <ComboBox fx:id="roleCombo" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+                <Button fx:id="registerBtn" text="Register" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                <Label fx:id="messageLabel" />
+            </children>
+        </GridPane>
+        <Button fx:id="backBtn" text="Back to Login" />
+    </children>
+</VBox> 

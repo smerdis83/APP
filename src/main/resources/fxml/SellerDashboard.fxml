@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.SellerDashboardController" alignment="CENTER" spacing="30" style="-fx-background-color: #f8f9fa;">
+    <padding>
+        <Insets top="40" right="40" bottom="40" left="40" />
+    </padding>
+    <children>
+        <Label fx:id="welcomeLabel" />
+        <Label fx:id="roleLabel" />
+        <Button fx:id="profileBtn" text="View Profile" />
+        <Button fx:id="logoutBtn" text="Logout" />
+        <Button fx:id="addRestaurantBtn" text="Add Restaurant" />
+        <Button fx:id="myRestaurantsBtn" text="My Restaurants" />
+        <Button fx:id="restaurantListBtn" text="Restaurant List" />
+        <VBox fx:id="roleContent" spacing="10" />
+    </children>
+</VBox> 

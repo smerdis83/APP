@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="CENTER" prefWidth="500.0" prefHeight="350.0" fx:controller="com.example.foodapp.controller.AddMenuController">
+    <children>
+        <Label text="Add New Menu" style="-fx-font-size: 24px; -fx-font-weight: bold;" />
+        <ComboBox fx:id="restaurantCombo" promptText="Select Restaurant" prefWidth="300.0" />
+        <TextField fx:id="titleField" promptText="Menu Title (e.g. Lunch)" prefWidth="300.0" />
+        <HBox spacing="10" alignment="CENTER">
+            <children>
+                <Button fx:id="addBtn" text="Add Menu" />
+                <Button fx:id="backBtn" text="Back" />
+            </children>
+        </HBox>
+        <Label fx:id="messageLabel" style="-fx-text-fill: #e74c3c;" />
+    </children>
+</VBox> 
