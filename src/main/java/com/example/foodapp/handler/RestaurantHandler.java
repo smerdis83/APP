@@ -100,6 +100,65 @@ public class RestaurantHandler implements HttpHandler {
                 List<Restaurant> mine = restaurantDao.findByOwner(userId);
                 sendJson(exchange, 200, mine);
 
+            } else if ("GET".equalsIgnoreCase(method) && path.matches("/restaurants/\\d+$")) {
+                // 2.1) Protected: get individual restaurant details
+                int restaurantId = extractIdFromPath(path, "/restaurants/");
+                String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                    sendJson(exchange, 401, new ErrorResponse("Missing or invalid Authorization header"));
+                    return;
+                }
+                String token = authHeader.substring("Bearer ".length()).trim();
+                Claims claims;
+                try {
+                    claims = JwtUtil.parseToken(token);
+                } catch (ExpiredJwtException e) {
+                    sendJson(exchange, 401, new ErrorResponse("Token expired"));
+                    return;
+                } catch (SignatureException | MalformedJwtException e) {
+                    sendJson(exchange, 401, new ErrorResponse("Invalid token"));
+                    return;
+                } catch (Exception e) {
+                    sendJson(exchange, 500, new ErrorResponse("Server error"));
+                    return;
+                }
+
+                int userId;
+                try {
+                    userId = Integer.parseInt(claims.getSubject());
+                } catch (NumberFormatException e) {
+                    sendJson(exchange, 400, new ErrorResponse("Invalid user ID in token"));
+                    return;
+                }
+
+                // Only SELLERs can view restaurant details
+                String role = claims.get("role", String.class);
+                if (!"SELLER".equals(role)) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller"));
+                    return;
+                }
+
+                Restaurant restaurant = null;
+                try {
+                    restaurant = restaurantDao.findById(restaurantId);
+                } catch (Exception e) {
+                    sendJson(exchange, 500, new ErrorResponse("Database error"));
+                    return;
+                }
+
+                if (restaurant == null) {
+                    sendJson(exchange, 404, new ErrorResponse("Restaurant not found"));
+                    return;
+                }
+
+                // Check ownership
+                if (restaurant.getOwnerId() != userId) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
+                    return;
+                }
+
+                sendJson(exchange, 200, restaurant);
+
             } else if ("POST".equalsIgnoreCase(method) && "/restaurants".equals(path)) {
                 // 3) Protected: seller creates a new restaurant
                 String authHeader = exchange.getRequestHeaders().getFirst("Authorization");

@@ -22,7 +22,10 @@ public class MyRestaurantsController {
     private Runnable onBack;
     private ObservableList<RestaurantItem> restaurants = FXCollections.observableArrayList();
     private Consumer<RestaurantItem> onManageMenus;
+    private Consumer<RestaurantItem> onEditRestaurant;
+    
     public void setOnManageMenus(Consumer<RestaurantItem> c) { this.onManageMenus = c; }
+    public void setOnEditRestaurant(Consumer<RestaurantItem> c) { this.onEditRestaurant = c; }
 
     public void setJwtToken(String token) { this.jwtToken = token; }
     public void setOnBack(Runnable r) { this.onBack = r; }
@@ -133,7 +136,9 @@ public class MyRestaurantsController {
         private void handleEdit() {
             RestaurantItem item = getItem();
             if (item == null) return;
-            // TODO: Show edit modal dialog for this restaurant
+            if (onEditRestaurant != null) {
+                onEditRestaurant.accept(item);
+            }
         }
         private void handleDelete() {
             RestaurantItem item = getItem();

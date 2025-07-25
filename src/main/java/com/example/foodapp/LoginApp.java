@@ -737,6 +737,7 @@ public class LoginApp extends Application {
             controller.setJwtToken(this.jwtToken);
             controller.setOnBack(() -> showDashboard(stage, userRole));
             controller.setOnManageMenus(item -> showMenuListScreen(stage, item.id, item.name));
+            controller.setOnEditRestaurant(item -> showEditRestaurantScreen(stage, item));
             Scene scene = new Scene(root, 800, 600);
             stage.setTitle("My Restaurants");
             stage.setScene(scene);
@@ -880,12 +881,13 @@ public class LoginApp extends Application {
 
     public void showSimpleRestaurantOrdersScreen(javafx.stage.Stage stage) {
         try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/SimpleRestaurantOrders.fxml"));
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/RestaurantOrders.fxml"));
             javafx.scene.Parent root = loader.load();
-            com.example.foodapp.controller.SimpleRestaurantOrdersController controller = loader.getController();
+            com.example.foodapp.controller.RestaurantOrdersController controller = loader.getController();
             controller.setJwtToken(this.jwtToken);
+            controller.setOnBack(() -> showDashboard(stage, userRole));
             stage.setScene(new javafx.scene.Scene(root, 800, 600));
-            stage.setTitle("Simple Order Management");
+            stage.setTitle("Restaurant Order Management");
             stage.centerOnScreen();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -894,17 +896,29 @@ public class LoginApp extends Application {
     // TODO: Wire this to a button in the seller dashboard for quick testing
 
     public void showDeliveryManagementScreen(javafx.stage.Stage stage) {
+        // TODO: Implement delivery management screen
+        // For now, just show an alert
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle("Delivery Management");
+        alert.setHeaderText("Feature Not Yet Implemented");
+        alert.setContentText("Delivery management functionality will be implemented in a future update.");
+        alert.showAndWait();
+    }
+
+    private void showEditRestaurantScreen(Stage stage, com.example.foodapp.controller.MyRestaurantsController.RestaurantItem restaurantItem) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/DeliveryManagement.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/EditRestaurant.fxml"));
             Parent root = loader.load();
-            com.example.foodapp.controller.DeliveryManagementController controller = loader.getController();
+            com.example.foodapp.controller.EditRestaurantController controller = loader.getController();
             controller.setJwtToken(this.jwtToken);
-            controller.setOnBack(() -> showDashboard(stage, userRole));
-            stage.setScene(new javafx.scene.Scene(root, 800, 600));
-            stage.setTitle("Delivery Management");
+            controller.setRestaurantItem(restaurantItem);
+            controller.setOnBack(() -> showMyRestaurantsScreen(stage));
+            Scene scene = new Scene(root, 600, 700);
+            stage.setTitle("Edit Restaurant - " + restaurantItem.name);
+            stage.setScene(scene);
             stage.centerOnScreen();
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
