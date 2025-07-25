@@ -39,7 +39,7 @@ public class RestaurantDao {
      * On success, sets the generated ID on the Restaurant object.
      */
     public void createRestaurant(Restaurant restaurant) throws SQLException {
-        String sql = "INSERT INTO restaurants (name, address, phone, owner_id) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO restaurants (name, address, phone, owner_id, logo_base64) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = JdbcUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -48,6 +48,8 @@ public class RestaurantDao {
             ps.setString(2, restaurant.getAddress());
             ps.setString(3, restaurant.getPhone());
             ps.setInt(4, restaurant.getOwnerId());
+            ps.setString(5, restaurant.getLogoBase64());
+            System.out.println("[DEBUG] logoBase64 in DAO: " + (restaurant.getLogoBase64() == null ? "null" : restaurant.getLogoBase64().substring(0, Math.min(40, restaurant.getLogoBase64().length()))));
 
             int affectedRows = ps.executeUpdate();
             if (affectedRows == 0) {
@@ -71,7 +73,7 @@ public class RestaurantDao {
      */
     public List<Restaurant> findAll() throws SQLException {
         List<Restaurant> restaurants = new ArrayList<>();
-        String sql = "SELECT id, name, address, phone, owner_id, created_at, updated_at FROM restaurants";
+        String sql = "SELECT id, name, address, phone, owner_id, created_at, updated_at, logo_base64 FROM restaurants";
 
         try (Connection conn = JdbcUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -88,8 +90,10 @@ public class RestaurantDao {
                 Timestamp updatedTs = rs.getTimestamp("updated_at");
                 LocalDateTime createdAt = createdTs != null ? createdTs.toLocalDateTime() : null;
                 LocalDateTime updatedAt = updatedTs != null ? updatedTs.toLocalDateTime() : null;
+                String logoBase64 = rs.getString("logo_base64");
 
                 Restaurant r = new Restaurant(id, name, address, phone, ownerId, createdAt, updatedAt);
+                r.setLogoBase64(logoBase64);
                 restaurants.add(r);
             }
         }
@@ -103,8 +107,7 @@ public class RestaurantDao {
      */
     public List<Restaurant> findByOwner(int ownerId) throws SQLException {
         List<Restaurant> restaurants = new ArrayList<>();
-        String sql = "SELECT id, name, address, phone, owner_id, created_at, updated_at "
-                   + "FROM restaurants WHERE owner_id = ?";
+        String sql = "SELECT id, name, address, phone, owner_id, created_at, updated_at, logo_base64 FROM restaurants WHERE owner_id = ?";
 
         try (Connection conn = JdbcUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -121,8 +124,10 @@ public class RestaurantDao {
                     Timestamp updatedTs = rs.getTimestamp("updated_at");
                     LocalDateTime createdAt = createdTs != null ? createdTs.toLocalDateTime() : null;
                     LocalDateTime updatedAt = updatedTs != null ? updatedTs.toLocalDateTime() : null;
+                    String logoBase64 = rs.getString("logo_base64");
 
                     Restaurant r = new Restaurant(id, name, address, phone, ownerId, createdAt, updatedAt);
+                    r.setLogoBase64(logoBase64);
                     restaurants.add(r);
                 }
             }

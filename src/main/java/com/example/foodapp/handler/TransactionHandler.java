@@ -104,6 +104,8 @@ public class TransactionHandler implements HttpHandler {
                 }
                 int orderId = (int) req.get("order_id");
                 String paymentMethod = req.get("method").toString();
+                paymentMethod = paymentMethod.trim().toLowerCase();
+                System.out.println("[DEBUG] Payment method received: '" + paymentMethod + "'");
                 // Fetch order and price
                 com.example.foodapp.dao.OrderDao orderDao2 = new com.example.foodapp.dao.OrderDao();
                 com.example.foodapp.model.entity.Order order;
@@ -115,7 +117,7 @@ public class TransactionHandler implements HttpHandler {
                     return;
                 }
                 int amount = order.getPayPrice();
-                if ("wallet".equalsIgnoreCase(paymentMethod)) {
+                if ("wallet".equals(paymentMethod)) {
                     com.example.foodapp.dao.UserDao userDao = new com.example.foodapp.dao.UserDao();
                     int currentBalance = userDao.getWalletBalance(userId);
                     if (currentBalance < amount) {
@@ -123,8 +125,8 @@ public class TransactionHandler implements HttpHandler {
                         return;
                     }
                     userDao.updateWalletBalance(userId, currentBalance - amount);
-                } else if (!"online".equalsIgnoreCase(paymentMethod)) {
-                    sendJson(exchange, 400, Map.of("error", "Invalid payment method"));
+                } else if (!"online".equals(paymentMethod)) {
+                    sendJson(exchange, 400, Map.of("error", "Invalid payment method: '" + paymentMethod + "'"));
                     return;
                 }
                 // Create payment transaction
@@ -136,8 +138,15 @@ public class TransactionHandler implements HttpHandler {
                 tx.setAmount(amount);
                 tx.setStatus("success");
                 orderDao.insertTransaction(tx);
-                // Optionally update order status to 'waiting vendor' after payment
-                try { orderDao2.updateOrderStatus(orderId, "waiting vendor"); } catch (Exception ignore) {}
+                // Always update order status to 'waiting vendor' after payment
+                try {
+                    orderDao2.updateOrderStatus(orderId, "waiting vendor");
+                    orderDao2.insertOrderStatusHistory(orderId, "waiting vendor", "system");
+                    System.out.println("[DEBUG] Order status updated to 'waiting vendor' for order_id=" + orderId);
+                } catch (Exception e) {
+                    System.err.println("[ERROR] Failed to update order status to 'waiting vendor' for order_id=" + orderId + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
                 sendJson(exchange, 200, tx);
                 return;
             } else {

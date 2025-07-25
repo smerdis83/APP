@@ -212,8 +212,8 @@ public class PaymentController {
                             orderId = Integer.parseInt(idStr);
                         }
                     } catch (Exception ignore) {}
-                    if (useWallet && orderId != -1) {
-                        // Now POST to /payment/online
+                    if (orderId != -1) {
+                        // Now POST to /payment/online for both wallet and online
                         int finalOrderId = orderId;
                         new Thread(() -> {
                             try {
@@ -223,7 +223,7 @@ public class PaymentController {
                                 payConn.setRequestProperty("Content-Type", "application/json");
                                 payConn.setRequestProperty("Authorization", "Bearer " + jwtToken);
                                 payConn.setDoOutput(true);
-                                String payJson = String.format("{\"order_id\":%d,\"method\":\"wallet\"}", finalOrderId);
+                                String payJson = String.format("{\"order_id\":%d,\"method\":\"%s\"}", finalOrderId, useWallet ? "wallet" : "online");
                                 try (java.io.OutputStream os = payConn.getOutputStream()) {
                                     os.write(payJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
                                 }
@@ -265,11 +265,6 @@ public class PaymentController {
                                 Platform.runLater(() -> messageLabel.setText("Payment error: " + ex.getMessage()));
                             }
                         }).start();
-                    } else {
-                        Platform.runLater(() -> {
-                            messageLabel.setText("");
-                            if (onSuccess != null) onSuccess.run();
-                        });
                     }
                 } else if (useWallet && (resp.contains("Insufficient wallet balance") || resp.contains("insufficient wallet balance"))) {
                     int lacking = total;

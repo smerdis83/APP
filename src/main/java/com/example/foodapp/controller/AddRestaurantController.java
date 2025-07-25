@@ -3,10 +3,16 @@ package com.example.foodapp.controller;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.application.Platform;
+import javafx.stage.FileChooser;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 
 public class AddRestaurantController {
     @FXML private TextField nameField;
-    @FXML private TextField logoField;
     @FXML private Button addBtn;
     @FXML private Button backBtn;
     @FXML private Label messageLabel;
@@ -14,9 +20,12 @@ public class AddRestaurantController {
     @FXML private TextField phoneField;
     @FXML private TextField taxFeeField;
     @FXML private TextField additionalFeeField;
+    @FXML private ImageView logoImageView;
+    @FXML private Button chooseLogoBtn;
 
     private String jwtToken;
     private Runnable onBack;
+    private String logoBase64 = null;
 
     public void setJwtToken(String token) { this.jwtToken = token; }
     public void setOnBack(Runnable r) { this.onBack = r; }
@@ -25,13 +34,34 @@ public class AddRestaurantController {
     public void initialize() {
         addBtn.setOnAction(e -> handleAddRestaurant());
         backBtn.setOnAction(e -> { if (onBack != null) onBack.run(); });
+        chooseLogoBtn.setOnAction(e -> handleChooseLogo());
+    }
+
+    private void handleChooseLogo() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Logo Image");
+        fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif")
+        );
+        File file = fileChooser.showOpenDialog(logoImageView.getScene().getWindow());
+        if (file != null) {
+            try (FileInputStream fis = new FileInputStream(file); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                byte[] buf = new byte[4096];
+                int n;
+                while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
+                byte[] imgBytes = baos.toByteArray();
+                this.logoBase64 = Base64.getEncoder().encodeToString(imgBytes);
+                logoImageView.setImage(new Image(new java.io.ByteArrayInputStream(imgBytes)));
+            } catch (Exception ex) {
+                new Alert(Alert.AlertType.ERROR, "Failed to load image: " + ex.getMessage()).showAndWait();
+            }
+        }
     }
 
     private void handleAddRestaurant() {
         String name = nameField.getText().trim();
         String address = addressField.getText().trim();
         String phone = phoneField.getText().trim();
-        String logo = logoField.getText().trim();
         String taxFeeStr = taxFeeField.getText().trim();
         String additionalFeeStr = additionalFeeField.getText().trim();
         if (name.isEmpty() || address.isEmpty() || phone.isEmpty()) {
@@ -41,7 +71,7 @@ public class AddRestaurantController {
         StringBuilder json = new StringBuilder();
         json.append("{");
         json.append(String.format("\"name\":\"%s\",\"address\":\"%s\",\"phone\":\"%s\"", name, address, phone));
-        if (!logo.isEmpty()) json.append(String.format(",\"logoBase64\":\"%s\"", logo));
+        if (logoBase64 != null && !logoBase64.isEmpty()) json.append(String.format(",\"logo_base64\":\"%s\"", logoBase64));
         if (!taxFeeStr.isEmpty()) {
             try { Integer.parseInt(taxFeeStr); json.append(String.format(",\"tax_fee\":%s", taxFeeStr)); } catch (Exception ignore) {}
         }

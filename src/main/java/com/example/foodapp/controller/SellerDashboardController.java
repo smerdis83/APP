@@ -13,6 +13,8 @@ public class SellerDashboardController {
     @FXML public Button addRestaurantBtn;
     @FXML public Button myRestaurantsBtn;
     @FXML public Button restaurantListBtn;
+    @FXML public Button orderManagementBtn;
+    @FXML public Button simpleOrderViewerBtn;
     @FXML public VBox roleContent;
 
     private Consumer<Void> onProfile;
@@ -30,6 +32,12 @@ public class SellerDashboardController {
     private Runnable onRestaurantList;
     public void setOnRestaurantList(Runnable callback) { this.onRestaurantList = callback; }
 
+    private Runnable onOrderManagement;
+    public void setOnOrderManagement(Runnable callback) { this.onOrderManagement = callback; }
+
+    private Runnable onSimpleOrderViewer;
+    public void setOnSimpleOrderViewer(Runnable callback) { this.onSimpleOrderViewer = callback; }
+
     @FXML
     public void initialize() {
         if (profileBtn != null) profileBtn.setOnAction(e -> { if (onProfile != null) onProfile.accept(null); });
@@ -37,6 +45,8 @@ public class SellerDashboardController {
         if (addRestaurantBtn != null) addRestaurantBtn.setOnAction(e -> { if (onAddRestaurant != null) onAddRestaurant.run(); });
         if (myRestaurantsBtn != null) myRestaurantsBtn.setOnAction(e -> { if (onMyRestaurants != null) onMyRestaurants.run(); });
         if (restaurantListBtn != null) restaurantListBtn.setOnAction(e -> { if (onRestaurantList != null) onRestaurantList.run(); });
+        if (orderManagementBtn != null) orderManagementBtn.setOnAction(e -> { if (onOrderManagement != null) onOrderManagement.run(); });
+        if (simpleOrderViewerBtn != null) simpleOrderViewerBtn.setOnAction(e -> { if (onSimpleOrderViewer != null) onSimpleOrderViewer.run(); });
     }
 
     public void setWelcome(String name) { welcomeLabel.setText("Welcome, " + name + "!"); }

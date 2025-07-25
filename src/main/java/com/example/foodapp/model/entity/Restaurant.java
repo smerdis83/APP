@@ -1,5 +1,6 @@
 package com.example.foodapp.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 public class Restaurant {
@@ -7,6 +8,7 @@ public class Restaurant {
     private String name;
     private String address;
     private String phone;
+    @JsonProperty("logo_base64")
     private String logoBase64;
     private int taxFee;
     private int additionalFee;

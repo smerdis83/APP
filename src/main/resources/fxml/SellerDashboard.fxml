@@ -14,6 +14,8 @@
         <Button fx:id="addRestaurantBtn" text="Add Restaurant" />
         <Button fx:id="myRestaurantsBtn" text="My Restaurants" />
         <Button fx:id="restaurantListBtn" text="Restaurant List" />
+        <Button fx:id="orderManagementBtn" text="Order Management" />
+        <Button fx:id="simpleOrderViewerBtn" text="Simple Order Viewer" />
         <VBox fx:id="roleContent" spacing="10" />
     </children>
 </VBox> 

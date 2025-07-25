@@ -6,6 +6,13 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import java.util.*;
+import javafx.stage.FileChooser;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 
 public class MenuDetailController {
     @FXML private Label menuLabel;
@@ -18,6 +25,9 @@ public class MenuDetailController {
     @FXML private Button addFoodBtn;
     @FXML private Button backBtn;
     @FXML private Label messageLabel;
+    @FXML private ImageView foodImageView;
+    @FXML private Button chooseFoodImageBtn;
+    private String foodImageBase64 = null;
 
     private String jwtToken;
     private int restaurantId;
@@ -45,6 +55,7 @@ public class MenuDetailController {
         });
         addFoodBtn.setOnAction(e -> handleAddFood());
         backBtn.setOnAction(e -> { if (onBack != null) onBack.run(); });
+        chooseFoodImageBtn.setOnAction(e -> handleChooseFoodImage());
     }
 
     public void loadFoods() {
@@ -92,6 +103,27 @@ public class MenuDetailController {
         return list;
     }
 
+    private void handleChooseFoodImage() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Food Image");
+        fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif")
+        );
+        File file = fileChooser.showOpenDialog(foodImageView.getScene().getWindow());
+        if (file != null) {
+            try (FileInputStream fis = new FileInputStream(file); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                byte[] buf = new byte[4096];
+                int n;
+                while ((n = fis.read(buf)) != -1) baos.write(buf, 0, n);
+                byte[] imgBytes = baos.toByteArray();
+                this.foodImageBase64 = Base64.getEncoder().encodeToString(imgBytes);
+                foodImageView.setImage(new Image(new java.io.ByteArrayInputStream(imgBytes)));
+            } catch (Exception ex) {
+                new Alert(Alert.AlertType.ERROR, "Failed to load image: " + ex.getMessage()).showAndWait();
+            }
+        }
+    }
+
     private void handleAddFood() {
         String name = foodNameField.getText().trim();
         String priceStr = foodPriceField.getText().trim();
@@ -109,8 +141,9 @@ public class MenuDetailController {
         new Thread(() -> {
             try {
                 // Step 1: Create the food item
-                String foodJson = String.format("{\"name\":\"%s\",\"description\":\"%s\",\"price\":%d,\"supply\":%d,\"keywords\":%s}",
-                        name, desc, price, supply, new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(keywords));
+                String foodJson = String.format("{\"name\":\"%s\",\"description\":\"%s\",\"price\":%d,\"supply\":%d,\"keywords\":%s%s}",
+                        name, desc, price, supply, new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(keywords),
+                        (foodImageBase64 != null && !foodImageBase64.isEmpty()) ? String.format(",\"image_base64\":\"%s\"", foodImageBase64) : "");
                 java.net.URL foodUrl = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId + "/item");
                 java.net.HttpURLConnection foodConn = (java.net.HttpURLConnection) foodUrl.openConnection();
                 foodConn.setRequestMethod("POST");

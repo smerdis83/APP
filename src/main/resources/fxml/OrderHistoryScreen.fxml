@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.OrderHistoryController" alignment="CENTER" spacing="20" style="-fx-background-color: #f8f9fa;">
-    <padding>
-        <Insets top="40" right="40" bottom="40" left="40" />
-    </padding>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="TOP_CENTER" prefWidth="800.0" prefHeight="600.0" fx:controller="com.example.foodapp.controller.OrderHistoryController">
     <children>
-        <Label text="Order History" styleClass="title" />
-        <Label fx:id="messageLabel" styleClass="error" />
-        <ListView fx:id="orderList" prefHeight="400" prefWidth="800" />
-        <Button fx:id="backBtn" text="Back to Dashboard" />
+        <Button fx:id="backBtn" text="Back" maxWidth="100" />
+        <Label fx:id="messageLabel" style="-fx-text-fill: green; -fx-font-size: 16px;" />
+        <HBox spacing="20" alignment="TOP_CENTER">
+            <ListView fx:id="orderList" prefWidth="350.0" prefHeight="450.0" />
+            <VBox spacing="10" alignment="TOP_LEFT" prefWidth="400.0">
+                <Label text="Order Details" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+                <Label fx:id="idLabel" text="Order ID: " />
+                <Label fx:id="restaurantLabel" text="Restaurant: " />
+                <Label fx:id="statusLabel" text="Status: " />
+                <Label fx:id="totalLabel" text="Total: " />
+                <Label fx:id="createdLabel" text="Created: " />
+                <Label fx:id="updatedLabel" text="Updated: " />
+                <Label text="Items:" />
+                <ListView fx:id="itemsList" prefHeight="120.0" />
+            </VBox>
+        </HBox>
     </children>
 </VBox> 

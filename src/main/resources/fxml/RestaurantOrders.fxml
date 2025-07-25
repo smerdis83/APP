@@ -1,25 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<HBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="CENTER" prefWidth="1200.0" prefHeight="700.0" fx:controller="com.example.foodapp.controller.RestaurantOrdersController">
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="TOP_CENTER" prefWidth="800.0" prefHeight="600.0" fx:controller="com.example.foodapp.controller.RestaurantOrdersController">
     <children>
-        <VBox spacing="10" alignment="TOP_CENTER" prefWidth="380.0">
-            <children>
-                <Label text="Pending Orders" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
-                <ListView fx:id="pendingOrdersList" prefHeight="600.0" />
-            </children>
-        </VBox>
-        <VBox spacing="10" alignment="TOP_CENTER" prefWidth="380.0">
-            <children>
-                <Label text="Accepted Orders" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
-                <ListView fx:id="acceptedOrdersList" prefHeight="600.0" />
-            </children>
-        </VBox>
-        <VBox spacing="10" alignment="TOP_CENTER" prefWidth="380.0">
-            <children>
-                <Label text="Served Orders" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
-                <ListView fx:id="servedOrdersList" prefHeight="600.0" />
-            </children>
-        </VBox>
+        <Button fx:id="backBtn" text="Back" prefWidth="100.0" />
+        <Label fx:id="messageLabel" style="-fx-text-fill: green; -fx-font-size: 16px;" />
+        <ComboBox fx:id="restaurantCombo" promptText="Select Restaurant" prefWidth="400.0" />
+        <TabPane prefWidth="780.0" prefHeight="500.0">
+            <tabs>
+                <Tab text="Submitted" closable="false">
+                    <content>
+                        <ListView fx:id="submittedList" prefHeight="450.0" />
+                    </content>
+                </Tab>
+                <Tab text="Accepted" closable="false">
+                    <content>
+                        <ListView fx:id="acceptedList" prefHeight="450.0" />
+                    </content>
+                </Tab>
+                <Tab text="Served" closable="false">
+                    <content>
+                        <ListView fx:id="servedList" prefHeight="450.0" />
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
     </children>
-</HBox> 
+</VBox> 

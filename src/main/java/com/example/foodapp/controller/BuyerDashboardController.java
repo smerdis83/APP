@@ -19,6 +19,7 @@ public class BuyerDashboardController {
     @FXML public Button restaurantListBtn;
     @FXML public VBox roleContent;
     @FXML private Button topUpWalletBtn;
+    @FXML public Button activeOrdersBtn;
     private String jwtToken;
     public void setJwtToken(String token) { this.jwtToken = token; }
 
@@ -37,6 +38,9 @@ public class BuyerDashboardController {
     private Runnable onRestaurantList;
     public void setOnRestaurantList(Runnable callback) { this.onRestaurantList = callback; }
 
+    private Runnable onActiveOrders;
+    public void setOnActiveOrders(Runnable callback) { this.onActiveOrders = callback; }
+
     private com.example.foodapp.LoginApp app;
     public void setApp(com.example.foodapp.LoginApp app) { this.app = app; }
 
@@ -53,6 +57,15 @@ public class BuyerDashboardController {
                 app.showTopUpWalletPage(stage, jwtToken, () -> app.showDashboard(stage, "BUYER"));
             });
         }
+        if (orderHistoryBtn != null) orderHistoryBtn.setOnAction(e -> {
+            javafx.stage.Stage stage = (javafx.stage.Stage) orderHistoryBtn.getScene().getWindow();
+            app.showOrderHistoryScreen(stage);
+        });
+        if (activeOrdersBtn != null) activeOrdersBtn.setOnAction(e -> {
+            javafx.stage.Stage stage = (javafx.stage.Stage) activeOrdersBtn.getScene().getWindow();
+            if (onActiveOrders != null) onActiveOrders.run();
+            else if (app != null) app.showOrderHistoryScreen(stage, true); // true = active only
+        });
     }
 
     public void setWelcome(String name) { welcomeLabel.setText("Welcome, " + name + "!"); }

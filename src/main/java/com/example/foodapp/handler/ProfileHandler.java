@@ -67,6 +67,9 @@ public class ProfileHandler implements HttpHandler {
                     return;
                 }
                 user.setPasswordHash(null); // Don't expose password
+                // Fix: set wallet balance
+                int walletBalance = new UserDao().getWalletBalance(userId);
+                user.setWalletBalance(walletBalance);
                 sendJson(exchange, 200, user);
                 return;
             } else if ("PUT".equalsIgnoreCase(method)) {
@@ -101,6 +104,7 @@ public class ProfileHandler implements HttpHandler {
                     return;
                 }
                 if (updateReq.containsKey("fullName")) user.setFullName((String) updateReq.get("fullName"));
+                else if (updateReq.containsKey("full_name")) user.setFullName((String) updateReq.get("full_name"));
                 if (updateReq.containsKey("phone")) user.setPhone((String) updateReq.get("phone"));
                 if (updateReq.containsKey("email")) user.setEmail((String) updateReq.get("email"));
                 if (updateReq.containsKey("address")) user.setAddress((String) updateReq.get("address"));

@@ -1,58 +1,123 @@
 package com.example.foodapp.controller;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.ListCell;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.layout.VBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Button;
-import javafx.geometry.Insets;
 import javafx.application.Platform;
-import javafx.scene.layout.HBox;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.*;
-import java.util.stream.Collectors;
+import javafx.scene.control.Label;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+import java.net.http.HttpRequest.BodyPublishers;
 
 public class RestaurantOrdersController {
-    @FXML private ListView<OrderItem> pendingOrdersList;
-    @FXML private ListView<OrderItem> acceptedOrdersList;
-    @FXML private ListView<OrderItem> servedOrdersList;
+    @FXML private ComboBox<RestaurantItem> restaurantCombo;
+    @FXML private ListView<OrderItem> submittedList;
+    @FXML private ListView<OrderItem> acceptedList;
+    @FXML private ListView<OrderItem> servedList;
+    @FXML private Label messageLabel;
+    @FXML private Button backBtn;
+    private Runnable onBack;
+    public void setOnBack(Runnable callback) { this.onBack = callback; }
 
-    private ObservableList<OrderItem> pendingOrders = FXCollections.observableArrayList();
+    private ObservableList<RestaurantItem> restaurants = FXCollections.observableArrayList();
+    private ObservableList<OrderItem> submittedOrders = FXCollections.observableArrayList();
     private ObservableList<OrderItem> acceptedOrders = FXCollections.observableArrayList();
     private ObservableList<OrderItem> servedOrders = FXCollections.observableArrayList();
+    private Integer selectedRestaurantId = null;
+    private String jwtToken;
+
+    public void setJwtToken(String token) { this.jwtToken = token; }
 
     @FXML
     public void initialize() {
-        // Make ListViews fill available space
-        pendingOrdersList.setPrefHeight(Double.MAX_VALUE);
-        acceptedOrdersList.setPrefHeight(Double.MAX_VALUE);
-        servedOrdersList.setPrefHeight(Double.MAX_VALUE);
-
-        // Set cell factories for custom order display
-        pendingOrdersList.setCellFactory(list -> new OrderCell("pending"));
-        acceptedOrdersList.setCellFactory(list -> new OrderCell("accepted"));
-        servedOrdersList.setCellFactory(list -> new OrderCell("served"));
-
-        // Assign observable lists
-        pendingOrdersList.setItems(pendingOrders);
-        acceptedOrdersList.setItems(acceptedOrders);
-        servedOrdersList.setItems(servedOrders);
-
-        loadOrdersFromBackend();
+        restaurantCombo.setItems(restaurants);
+        submittedList.setItems(submittedOrders);
+        acceptedList.setItems(acceptedOrders);
+        servedList.setItems(servedOrders);
+        if (backBtn != null) backBtn.setOnAction(e -> { if (onBack != null) onBack.run(); });
+        submittedList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(OrderItem order, boolean empty) {
+                super.updateItem(order, empty);
+                if (empty || order == null) {
+                    setGraphic(null);
+                } else {
+                    VBox box = new VBox(5);
+                    box.getChildren().add(new javafx.scene.control.Label("Address: " + order.address));
+                    box.getChildren().add(new javafx.scene.control.Label("Total: " + order.total));
+                    // Only show Accept/Reject for 'waiting vendor' orders
+                    String normalized = order.status.trim().replaceAll("\\s+", " ").toLowerCase();
+                    if (normalized.equals("waiting vendor")) {
+                        Button acceptBtn = new Button("Accept");
+                        Button rejectBtn = new Button("Reject");
+                        acceptBtn.setOnAction(e -> updateOrderStatus(order, "accepted"));
+                        rejectBtn.setOnAction(e -> updateOrderStatus(order, "rejected"));
+                        box.getChildren().add(new HBox(10, acceptBtn, rejectBtn));
+                    }
+                    setGraphic(box);
+                }
+            }
+        });
+        acceptedList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(OrderItem order, boolean empty) {
+                super.updateItem(order, empty);
+                if (empty || order == null) {
+                    setGraphic(null);
+                } else {
+                    VBox box = new VBox(5);
+                    box.getChildren().add(new javafx.scene.control.Label("Address: " + order.address));
+                    box.getChildren().add(new javafx.scene.control.Label("Total: " + order.total));
+                    Button serveBtn = new Button("Mark as Served");
+                    serveBtn.setOnAction(e -> updateOrderStatus(order, "served"));
+                    box.getChildren().add(serveBtn);
+                    setGraphic(box);
+                }
+            }
+        });
+        servedList.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(OrderItem order, boolean empty) {
+                super.updateItem(order, empty);
+                if (empty || order == null) {
+                    setGraphic(null);
+                } else {
+                    VBox box = new VBox(5);
+                    box.getChildren().add(new javafx.scene.control.Label("Address: " + order.address));
+                    box.getChildren().add(new javafx.scene.control.Label("Total: " + order.total));
+                    box.getChildren().add(new javafx.scene.control.Label("Status: Served"));
+                    setGraphic(box);
+                }
+            }
+        });
+        restaurantCombo.setOnAction(e -> {
+            RestaurantItem selected = restaurantCombo.getValue();
+            if (selected != null) {
+                selectedRestaurantId = selected.id;
+                loadOrdersFromBackend();
+            }
+        });
+        fetchRestaurants();
     }
 
-    private void loadOrdersFromBackend() {
+    private void fetchRestaurants() {
         new Thread(() -> {
             try {
-                // Replace with your actual backend endpoint and auth as needed
-                java.net.URL url = new java.net.URL("http://localhost:8000/restaurant/orders");
+                java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/mine");
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                // TODO: Set JWT token if needed
-                // conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                if (jwtToken != null) conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
                 int code = conn.getResponseCode();
                 String resp;
                 try (java.util.Scanner scanner = new java.util.Scanner(
@@ -61,122 +126,138 @@ public class RestaurantOrdersController {
                     scanner.useDelimiter("\\A");
                     resp = scanner.hasNext() ? scanner.next() : "";
                 }
-                // TODO: Parse JSON response into List<OrderItem>
-                // For now, fallback to mock if parsing fails
-                List<OrderItem> all = parseOrdersFromJson(resp);
+                List<RestaurantItem> list = parseRestaurantsFromJson(resp);
                 Platform.runLater(() -> {
-                    pendingOrders.setAll(all.stream().filter(o -> o.status.equals("pending")).collect(Collectors.toList()));
-                    acceptedOrders.setAll(all.stream().filter(o -> o.status.equals("accepted")).collect(Collectors.toList()));
-                    servedOrders.setAll(all.stream().filter(o -> o.status.equals("served")).collect(Collectors.toList()));
+                    restaurants.setAll(list);
+                    if (!list.isEmpty()) {
+                        restaurantCombo.getSelectionModel().selectFirst();
+                        selectedRestaurantId = list.get(0).id;
+                        loadOrdersFromBackend();
+                    }
                 });
             } catch (Exception ex) {
                 ex.printStackTrace();
-                Platform.runLater(this::loadMockOrders);
+            }
+        }).start();
+    }
+
+    private List<RestaurantItem> parseRestaurantsFromJson(String json) {
+        List<RestaurantItem> list = new ArrayList<>();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode arr = mapper.readTree(json);
+            if (arr.isArray()) {
+                for (JsonNode node : arr) {
+                    int id = node.path("id").asInt();
+                    String name = node.path("name").asText("");
+                    list.add(new RestaurantItem(id, name));
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return list;
+    }
+
+    private void loadOrdersFromBackend() {
+        if (selectedRestaurantId == null) return;
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/" + selectedRestaurantId + "/orders");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                if (jwtToken != null) conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                int code = conn.getResponseCode();
+                String resp;
+                try (java.util.Scanner scanner = new java.util.Scanner(
+                        code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream(),
+                        java.nio.charset.StandardCharsets.UTF_8)) {
+                    scanner.useDelimiter("\\A");
+                    resp = scanner.hasNext() ? scanner.next() : "";
+                }
+                List<OrderItem> all = parseOrdersFromJson(resp);
+                System.out.println("[DEBUG] After reload, orders:");
+                for (OrderItem o : all) System.out.println("[DEBUG] Order: id=" + o.id + ", status=" + o.status);
+                Platform.runLater(() -> {
+                    submittedOrders.setAll(all.stream().filter(o -> o.status.trim().replaceAll("\\s+", " ").equalsIgnoreCase("waiting vendor")).toList());
+                    acceptedOrders.setAll(all.stream().filter(o -> o.status.equals("accepted")).toList());
+                    servedOrders.setAll(all.stream().filter(o -> o.status.equals("served")).toList());
+                });
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
         }).start();
     }
 
     private List<OrderItem> parseOrdersFromJson(String json) {
-        // TODO: Implement real JSON parsing based on your backend response
-        // For now, fallback to mock
         List<OrderItem> all = new ArrayList<>();
-        all.add(new OrderItem(1, "Alice", "123 Main St", "Pizza x2, Coke x1", 250, "pending"));
-        all.add(new OrderItem(2, "Bob", "456 Oak Ave", "Burger x1, Fries x2", 180, "accepted"));
-        all.add(new OrderItem(3, "Charlie", "789 Pine Rd", "Salad x1", 90, "served"));
-        all.add(new OrderItem(4, "Dana", "321 Maple St", "Pizza x1, Salad x1", 170, "pending"));
-        all.add(new OrderItem(5, "Eve", "654 Elm St", "Burger x2", 200, "accepted"));
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode arr = mapper.readTree(json);
+            if (arr.isArray()) {
+                for (JsonNode node : arr) {
+                    int id = node.path("id").asInt();
+                    String address = node.path("delivery_address").asText("");
+                    String status = node.path("status").asText("");
+                    int total = node.path("pay_price").asInt();
+                    all.add(new OrderItem(id, address, total, status));
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
         return all;
+    }
+
+    private void showMessage(String msg) {
+        if (messageLabel != null) {
+            messageLabel.setText(msg);
+            new Thread(() -> {
+                try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                Platform.runLater(() -> messageLabel.setText(""));
+            }).start();
+        }
     }
 
     private void updateOrderStatus(OrderItem order, String newStatus) {
         new Thread(() -> {
             try {
-                java.net.URL url = new java.net.URL("http://localhost:8000/orders/" + order.id + "/status");
-                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                // TODO: Set JWT token if needed
-                // conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
-                conn.setDoOutput(true);
+                HttpClient client = HttpClient.newHttpClient();
+                String url = "http://localhost:8000/restaurants/orders/" + order.id;
                 String json = String.format("{\"status\":\"%s\"}", newStatus);
-                try (java.io.OutputStream os = conn.getOutputStream()) {
-                    os.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                }
-                int code = conn.getResponseCode();
+                HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .method("PATCH", BodyPublishers.ofString(json));
+                if (jwtToken != null) builder.header("Authorization", "Bearer " + jwtToken);
+                HttpRequest request = builder.build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                int code = response.statusCode();
+                System.out.println("[DEBUG] PATCH response code: " + code);
+                System.out.println("[DEBUG] PATCH response body: " + response.body());
                 if (code == 200 || code == 204) {
-                    Platform.runLater(this::loadOrdersFromBackend);
-                } else {
-                    // Optionally show error
                     Platform.runLater(() -> {
-                        // TODO: Show error message
+                        loadOrdersFromBackend();
+                        if ("accepted".equals(newStatus)) showMessage("Order accepted!");
+                        else if ("rejected".equals(newStatus)) showMessage("Order rejected.");
+                        else if ("served".equals(newStatus)) showMessage("Order marked as served.");
                     });
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
-                Platform.runLater(() -> {
-                    // TODO: Show error message
-                });
             }
         }).start();
     }
 
-    // Mock order loading for demonstration
-    private void loadMockOrders() {
-        List<OrderItem> all = new ArrayList<>();
-        all.add(new OrderItem(1, "Alice", "123 Main St", "Pizza x2, Coke x1", 250, "pending"));
-        all.add(new OrderItem(2, "Bob", "456 Oak Ave", "Burger x1, Fries x2", 180, "accepted"));
-        all.add(new OrderItem(3, "Charlie", "789 Pine Rd", "Salad x1", 90, "served"));
-        all.add(new OrderItem(4, "Dana", "321 Maple St", "Pizza x1, Salad x1", 170, "pending"));
-        all.add(new OrderItem(5, "Eve", "654 Elm St", "Burger x2", 200, "accepted"));
-        // Group by status
-        pendingOrders.setAll(all.stream().filter(o -> o.status.equals("pending")).collect(Collectors.toList()));
-        acceptedOrders.setAll(all.stream().filter(o -> o.status.equals("accepted")).collect(Collectors.toList()));
-        servedOrders.setAll(all.stream().filter(o -> o.status.equals("served")).collect(Collectors.toList()));
+    public static class RestaurantItem {
+        public final int id;
+        public final String name;
+        public RestaurantItem(int id, String name) { this.id = id; this.name = name; }
+        @Override public String toString() { return name; }
     }
-
-    // Order item for UI
     public static class OrderItem {
         public final int id;
-        public final String customer;
         public final String address;
-        public final String items;
         public final int total;
-        public String status;
-        public OrderItem(int id, String customer, String address, String items, int total, String status) {
-            this.id = id; this.customer = customer; this.address = address; this.items = items; this.total = total; this.status = status;
-        }
-    }
-
-    // Custom cell for displaying orders
-    private class OrderCell extends ListCell<OrderItem> {
-        private final String column;
-        public OrderCell(String column) { this.column = column; }
-        @Override
-        protected void updateItem(OrderItem order, boolean empty) {
-            super.updateItem(order, empty);
-            if (empty || order == null) {
-                setGraphic(null);
-            } else {
-                VBox box = new VBox(5);
-                box.setPadding(new Insets(8));
-                box.getChildren().add(new Label("Order #" + order.id + " - " + order.customer));
-                box.getChildren().add(new Label("Address: " + order.address));
-                box.getChildren().add(new Label("Items: " + order.items));
-                box.getChildren().add(new Label("Total: " + order.total));
-                box.getChildren().add(new Label("Status: " + order.status));
-                if (column.equals("pending")) {
-                    Button acceptBtn = new Button("Accept");
-                    Button rejectBtn = new Button("Reject");
-                    acceptBtn.setOnAction(e -> updateOrderStatus(order, "accepted"));
-                    rejectBtn.setOnAction(e -> updateOrderStatus(order, "rejected"));
-                    box.getChildren().add(new HBox(10, acceptBtn, rejectBtn));
-                } else if (column.equals("accepted")) {
-                    Button serveBtn = new Button("Mark as Served");
-                    serveBtn.setOnAction(e -> updateOrderStatus(order, "served"));
-                    box.getChildren().add(serveBtn);
-                }
-                setGraphic(box);
-            }
+        public final String status;
+        public OrderItem(int id, String address, int total, String status) {
+            this.id = id; this.address = address; this.total = total; this.status = status;
         }
     }
 } 

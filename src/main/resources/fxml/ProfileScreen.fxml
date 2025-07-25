@@ -2,34 +2,36 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.ProfileController" alignment="CENTER" spacing="20" style="-fx-background-color: #f8f9fa;">
     <padding>
         <Insets top="40" right="40" bottom="40" left="40" />
     </padding>
     <children>
         <Label text="Profile" styleClass="title" />
+        <ImageView fx:id="profileImageView" fitWidth="120" fitHeight="120" preserveRatio="true" />
+        <Button fx:id="changePicBtn" text="Change Picture" />
         <GridPane hgap="20" vgap="15">
             <children>
                 <Label text="Full Name:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
-                <Label fx:id="nameLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+                <TextField fx:id="nameField" GridPane.rowIndex="0" GridPane.columnIndex="1" />
                 <Label text="Phone:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
-                <Label fx:id="phoneLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                <TextField fx:id="phoneField" GridPane.rowIndex="1" GridPane.columnIndex="1" />
                 <Label text="Email:" GridPane.rowIndex="2" GridPane.columnIndex="0" />
-                <Label fx:id="emailLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                <TextField fx:id="emailField" GridPane.rowIndex="2" GridPane.columnIndex="1" />
                 <Label text="Role:" GridPane.rowIndex="3" GridPane.columnIndex="0" />
                 <Label fx:id="roleLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" />
                 <Label text="Address:" GridPane.rowIndex="4" GridPane.columnIndex="0" />
-                <Label fx:id="addressLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                <TextField fx:id="addressField" GridPane.rowIndex="4" GridPane.columnIndex="1" />
                 <Label text="Wallet Balance:" GridPane.rowIndex="5" GridPane.columnIndex="0" />
                 <Label fx:id="walletLabel" GridPane.rowIndex="5" GridPane.columnIndex="1" />
                 <Label text="Enabled:" GridPane.rowIndex="6" GridPane.columnIndex="0" />
                 <Label fx:id="enabledLabel" GridPane.rowIndex="6" GridPane.columnIndex="1" />
-                <Label text="Created At:" GridPane.rowIndex="7" GridPane.columnIndex="0" />
-                <Label fx:id="createdLabel" styleClass="mono-label" />
-                <Label text="Updated At:" GridPane.rowIndex="8" GridPane.columnIndex="0" />
-                <Label fx:id="updatedLabel" styleClass="mono-label" />
             </children>
         </GridPane>
-        <Button fx:id="backBtn" text="Back to Dashboard" />
+        <HBox spacing="20">
+            <Button fx:id="saveBtn" text="Save" />
+            <Button fx:id="backBtn" text="Back to Dashboard" />
+        </HBox>
     </children>
 </VBox> 

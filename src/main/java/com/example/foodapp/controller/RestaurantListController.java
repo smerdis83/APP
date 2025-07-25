@@ -92,11 +92,14 @@ public class RestaurantListController {
     }
 
     public static class RestaurantCell extends ListCell<RestaurantItem> {
-        private final HBox content = new HBox(10);
+        private final HBox content = new HBox(16);
         private final ImageView imageView = new ImageView();
         private final Label nameLabel = new Label();
         public RestaurantCell() {
-            imageView.setFitHeight(50); imageView.setFitWidth(50);
+            imageView.setFitHeight(60); imageView.setFitWidth(60);
+            imageView.setStyle("-fx-effect: dropshadow(gaussian, #b0b0b0, 6, 0.2, 0, 2); -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #e0e0e0; -fx-border-width: 2; -fx-padding: 6;");
+            nameLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 0 0 0 12;");
+            content.setStyle("-fx-alignment: CENTER_LEFT; -fx-padding: 8 0 8 0;");
             content.getChildren().addAll(imageView, nameLabel);
         }
         @Override
@@ -106,12 +109,14 @@ public class RestaurantListController {
                 setGraphic(null);
             } else {
                 nameLabel.setText(item.name);
-                if (item.logoBase64 != null && !item.logoBase64.isEmpty()) {
+                if (item.logoBase64 != null && item.logoBase64.length() > 20 && !item.logoBase64.startsWith("[")) {
+                    System.out.println("[DEBUG] Restaurant logoBase64 length: " + item.logoBase64.length() + ", first 20: " + item.logoBase64.substring(0, Math.min(20, item.logoBase64.length())));
                     try {
                         byte[] imgBytes = Base64.getDecoder().decode(item.logoBase64);
                         imageView.setImage(new Image(new ByteArrayInputStream(imgBytes)));
                     } catch (Exception e) { imageView.setImage(null); }
                 } else {
+                    System.out.println("[DEBUG] Restaurant has no valid logoBase64: " + item.name);
                     imageView.setImage(null);
                 }
                 setGraphic(content);

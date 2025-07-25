@@ -193,7 +193,15 @@ public class RestaurantPageController {
                 String supplyStr = json.substring(supplyStart, supplyEnd).replaceAll("[^0-9]", "").trim();
                 if (!supplyStr.isEmpty()) supply = Integer.parseInt(supplyStr);
             }
-            list.add(new FoodItem(id, name, price, supply));
+            // Parse image_base64 if present
+            int imageIdx = json.indexOf("\"image_base64\":", idx);
+            String imageBase64 = null;
+            if (imageIdx != -1) {
+                int imageStart = json.indexOf('"', imageIdx + 15) + 1;
+                int imageEnd = json.indexOf('"', imageStart);
+                imageBase64 = json.substring(imageStart, imageEnd);
+            }
+            list.add(new FoodItem(id, name, price, supply, imageBase64));
             idx = nameEnd;
         }
         return list;
@@ -239,16 +247,29 @@ public class RestaurantPageController {
 
     private class FoodCell extends ListCell<FoodItem> {
         private final HBox content = new HBox(20);
+        private final ImageView foodImageView = new ImageView();
         private final Label nameLabel = new Label();
         private final Label priceLabel = new Label();
         private final Button plusBtn = new Button("+");
         private final Button minusBtn = new Button("–");
         private final Label qtyLabel = new Label("0");
         public FoodCell() {
-            nameLabel.setMinWidth(200);
-            priceLabel.setMinWidth(80);
-            qtyLabel.setMinWidth(40);
-            content.getChildren().addAll(nameLabel, priceLabel, minusBtn, qtyLabel, plusBtn);
+            foodImageView.setFitHeight(50);
+            foodImageView.setFitWidth(50);
+            nameLabel.setMinWidth(120);
+            nameLabel.setMaxWidth(120);
+            nameLabel.setWrapText(true);
+            priceLabel.setMinWidth(60);
+            priceLabel.setMaxWidth(60);
+            qtyLabel.setMinWidth(30);
+            qtyLabel.setMaxWidth(30);
+            plusBtn.setText("+");
+            plusBtn.setMinWidth(32);
+            plusBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+            minusBtn.setMinWidth(32);
+            minusBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+            content.setSpacing(8);
+            content.getChildren().addAll(foodImageView, nameLabel, priceLabel, minusBtn, qtyLabel, plusBtn);
             plusBtn.setOnAction(e -> changeQty(1));
             minusBtn.setOnAction(e -> changeQty(-1));
         }
@@ -263,6 +284,15 @@ public class RestaurantPageController {
                 int qty = basketMap.getOrDefault(item.id, 0);
                 qtyLabel.setText(qty + "");
                 plusBtn.setDisable(qty >= item.supply);
+                // Set food image if available
+                if (item.imageBase64 != null && !item.imageBase64.isEmpty()) {
+                    try {
+                        byte[] imgBytes = java.util.Base64.getDecoder().decode(item.imageBase64);
+                        foodImageView.setImage(new javafx.scene.image.Image(new java.io.ByteArrayInputStream(imgBytes)));
+                    } catch (Exception e) { foodImageView.setImage(null); }
+                } else {
+                    foodImageView.setImage(null);
+                }
                 setGraphic(content);
             }
         }
@@ -309,8 +339,12 @@ public class RestaurantPageController {
         public final String name;
         public final int price;
         public final int supply;
+        public final String imageBase64;
+        public FoodItem(int id, String name, int price, int supply, String imageBase64) {
+            this.id = id; this.name = name; this.price = price; this.supply = supply; this.imageBase64 = imageBase64;
+        }
         public FoodItem(int id, String name, int price, int supply) {
-            this.id = id; this.name = name; this.price = price; this.supply = supply;
+            this(id, name, price, supply, null);
         }
     }
     public static class BasketItem {

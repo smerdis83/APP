@@ -15,6 +15,8 @@ import java.util.function.BiConsumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.foodapp.model.OrderSummary;
+import java.util.List;
+import java.util.ArrayList;
 
 public class LoginApp extends Application {
     private Stage primaryStage;
@@ -164,6 +166,8 @@ public class LoginApp extends Application {
                 controller.setOnAddRestaurant(() -> showAddRestaurantScreen(stage));
                 controller.setOnMyRestaurants(() -> showMyRestaurantsScreen(stage));
                 controller.setOnRestaurantList(() -> showRestaurantListScreen(stage));
+                controller.setOnOrderManagement(() -> showRestaurantOrdersScreen(stage));
+                controller.setOnSimpleOrderViewer(() -> showSimpleRestaurantOrdersScreen(stage));
                 Scene scene = new Scene(root, 1000, 700);
                 stage.setTitle("Seller Dashboard");
                 stage.setScene(scene);
@@ -174,8 +178,9 @@ public class LoginApp extends Application {
                 com.example.foodapp.controller.CourierDashboardController controller = loader.getController();
                 controller.setWelcome("User");
                 controller.setRole(role);
-                controller.setOnProfile(v -> fetchAndShowProfilePage(stage, role));
+                controller.setOnProfile(() -> fetchAndShowProfilePage(stage, role));
                 controller.setOnLogout(() -> handleLogout());
+                controller.setOnDeliveryManagement(() -> showDeliveryManagementScreen(stage));
                 Scene scene = new Scene(root, 1000, 700);
                 stage.setTitle("Courier Dashboard");
                 stage.setScene(scene);
@@ -203,26 +208,31 @@ public class LoginApp extends Application {
         }
     }
 
-    private void showOrderHistoryScreen(Stage stage) {
+    public void showOrderHistoryScreen(Stage stage) {
+        showOrderHistoryScreen(stage, false);
+    }
+    public void showOrderHistoryScreen(Stage stage, boolean activeOnly) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/OrderHistoryScreen.fxml"));
             Parent root = loader.load();
-            OrderHistoryController controller = loader.getController();
+            com.example.foodapp.controller.OrderHistoryController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setActiveOnly(activeOnly);
             controller.setOnBack(() -> showDashboard(stage, userRole));
-            controller.setOnOrderSelected(orderObj -> {
-                if (orderObj instanceof OrderSummary) showOrderDetailsScreen(stage, (OrderSummary) orderObj);
-            });
-            fetchOrders(controller);
-            Scene scene = new Scene(root, 1000, 700);
-            stage.setTitle("Order History");
+            fetchOrders(controller, activeOnly);
+            Scene scene = new Scene(root, 800, 600);
+            stage.setTitle(activeOnly ? "Active Orders" : "Order History");
             stage.setScene(scene);
             stage.centerOnScreen();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void fetchOrders(OrderHistoryController controller) {
+    public void fetchOrders(com.example.foodapp.controller.OrderHistoryController controller) {
+        fetchOrders(controller, false);
+    }
+    public void fetchOrders(com.example.foodapp.controller.OrderHistoryController controller, boolean activeOnly) {
         controller.clearMessage();
         new Thread(() -> {
             try {
@@ -239,13 +249,16 @@ public class LoginApp extends Application {
                     resp = scanner.hasNext() ? scanner.next() : "";
                 }
                 if (code == 200) {
-                    // Parse order summaries from JSON array (assume [{"id":1,"status":"...","pay_price":...}, ...])
-                    java.util.List<OrderSummary> orderSummaries = new java.util.ArrayList<>();
+                    List<com.example.foodapp.controller.OrderHistoryController.OrderSummary> orderSummaries = new ArrayList<>();
                     int idx = 0;
                     while ((idx = resp.indexOf("{", idx)) != -1) {
                         int idIdx = resp.indexOf("\"id\":", idx);
                         int statusIdx = resp.indexOf("\"status\":", idx);
                         int priceIdx = resp.indexOf("\"pay_price\":", idx);
+                        int createdIdx = resp.indexOf("\"created_at\":", idx);
+                        int updatedIdx = resp.indexOf("\"updated_at\":", idx);
+                        int restIdx = resp.indexOf("\"vendor_name\":", idx);
+                        int courierIdx = resp.indexOf("\"courier_id\":", idx);
                         if (idIdx == -1 || statusIdx == -1 || priceIdx == -1) break;
                         int idStart = idIdx + 5;
                         int idEnd = resp.indexOf(',', idStart);
@@ -257,7 +270,47 @@ public class LoginApp extends Application {
                         int priceEnd = resp.indexOf(',', priceStart);
                         if (priceEnd == -1) priceEnd = resp.indexOf('}', priceStart);
                         String price = resp.substring(priceStart, priceEnd).replaceAll("[^0-9]", "").trim();
-                        orderSummaries.add(new OrderSummary(id, status, price));
+                        String created = createdIdx != -1 ? extractStringField(resp, createdIdx + 13) : "";
+                        String updated = updatedIdx != -1 ? extractStringField(resp, updatedIdx + 13) : "";
+                        String restaurant = restIdx != -1 ? extractStringField(resp, restIdx + 14) : "";
+                        // Try to extract from 'restaurant' or 'vendor' if 'vendor_name' is missing
+                        if ((restaurant == null || restaurant.isEmpty())) {
+                            int restObjIdx = resp.indexOf("\"restaurant\":", idx);
+                            if (restObjIdx != -1) {
+                                int nameIdx = resp.indexOf("\"name\":", restObjIdx);
+                                if (nameIdx != -1) {
+                                    int nameStart = resp.indexOf('"', nameIdx + 7) + 1;
+                                    int nameEnd = resp.indexOf('"', nameStart);
+                                    if (nameStart > 0 && nameEnd > nameStart) {
+                                        restaurant = resp.substring(nameStart, nameEnd);
+                                    }
+                                }
+                            }
+                            int vendorObjIdx = resp.indexOf("\"vendor\":", idx);
+                            if ((restaurant == null || restaurant.isEmpty()) && vendorObjIdx != -1) {
+                                int nameIdx = resp.indexOf("\"name\":", vendorObjIdx);
+                                if (nameIdx != -1) {
+                                    int nameStart = resp.indexOf('"', nameIdx + 7) + 1;
+                                    int nameEnd = resp.indexOf('"', nameStart);
+                                    if (nameStart > 0 && nameEnd > nameStart) {
+                                        restaurant = resp.substring(nameStart, nameEnd);
+                                    }
+                                }
+                            }
+                        }
+                        if (restaurant == null || restaurant.isEmpty()) restaurant = "Unknown Restaurant";
+                        // Extract courier_id
+                        String courierId = "";
+                        if (courierIdx != -1) {
+                            int courierStart = courierIdx + 13;
+                            int courierEnd = resp.indexOf(',', courierStart);
+                            if (courierEnd == -1) courierEnd = resp.indexOf('}', courierStart);
+                            courierId = resp.substring(courierStart, courierEnd).replaceAll("[^0-9]", "").trim();
+                        }
+                        // Filter for active orders if needed
+                        if (!activeOnly || (status != null && !status.equalsIgnoreCase("completed") && !status.equalsIgnoreCase("delivered") && !status.equalsIgnoreCase("unpaid and cancelled") && !status.equalsIgnoreCase("cancelled"))) {
+                            orderSummaries.add(new com.example.foodapp.controller.OrderHistoryController.OrderSummary(id, restaurant, status, price, created, updated, courierId));
+                        }
                         idx = resp.indexOf('}', priceEnd) + 1;
                     }
                     javafx.application.Platform.runLater(() -> controller.setOrders(orderSummaries));
@@ -270,6 +323,13 @@ public class LoginApp extends Application {
                 javafx.application.Platform.runLater(() -> controller.showMessage("Error: " + ex.getMessage()));
             }
         }).start();
+    }
+
+    private String extractStringField(String resp, int startIdx) {
+        int start = resp.indexOf('"', startIdx) + 1;
+        int end = resp.indexOf('"', start);
+        if (start > 0 && end > start) return resp.substring(start, end);
+        return "";
     }
 
     private void showOrderDetailsScreen(Stage stage, OrderSummary order) {
@@ -495,29 +555,69 @@ public class LoginApp extends Application {
             }
             return "Empty";
         };
-        javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
-        grid.setPadding(new javafx.geometry.Insets(40));
-        grid.setHgap(20);
-        grid.setVgap(15);
-        int row = 0;
-        grid.add(new javafx.scene.control.Label("Full Name:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("fullName")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Phone:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("phone")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Email:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("email")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Role:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("role")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Address:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("address")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Wallet Balance:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("walletBalance")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Enabled:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("enabled")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Created At:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("createdAt")), 1, row++);
-        grid.add(new javafx.scene.control.Label("Updated At:"), 0, row); grid.add(new javafx.scene.control.Label(getField.apply("updatedAt")), 1, row++);
-        javafx.scene.control.Button backBtn = new javafx.scene.control.Button("Back to Dashboard");
-        backBtn.setOnAction(e -> showDashboard(stage, role));
-        javafx.scene.layout.VBox vbox = new javafx.scene.layout.VBox(20, new javafx.scene.text.Text("User Profile"), grid, backBtn);
-        vbox.setPadding(new javafx.geometry.Insets(40));
-        vbox.setStyle("-fx-alignment: center;");
-        Scene scene = new Scene(vbox, 1000, 700);
-        stage.setTitle("Profile");
-        stage.setScene(scene);
-        stage.centerOnScreen();
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ProfileScreen.fxml"));
+            Parent root = loader.load();
+            com.example.foodapp.controller.ProfileController controller = loader.getController();
+            controller.setProfile(
+                getField.apply("fullName"),
+                getField.apply("phone"),
+                getField.apply("email"),
+                getField.apply("role"),
+                getField.apply("address"),
+                getField.apply("walletBalance"),
+                getField.apply("enabled"),
+                getField.apply("createdAt"),
+                getField.apply("updatedAt"),
+                getField.apply("profileImageBase64")
+            );
+            controller.setOnBack(() -> showDashboard(stage, role));
+            controller.setOnSave(data -> saveProfile(stage, role, data));
+            Scene scene = new Scene(root, 1000, 700);
+            stage.setTitle("Profile");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveProfile(Stage stage, String role, com.example.foodapp.controller.ProfileController.ProfileData data) {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("http://localhost:8000/auth/profile");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("PUT");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                conn.setDoOutput(true);
+                String json = String.format("{\"full_name\":\"%s\",\"phone\":\"%s\",\"email\":\"%s\",\"address\":\"%s\",\"profileImageBase64\":\"%s\"}",
+                    data.name.replace("\"", "'"),
+                    data.phone.replace("\"", "'"),
+                    data.email.replace("\"", "'"),
+                    data.address.replace("\"", "'"),
+                    data.profileImageBase64 == null ? "" : data.profileImageBase64.replace("\"", "'"));
+                try (java.io.OutputStream os = conn.getOutputStream()) {
+                    os.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+                int code = conn.getResponseCode();
+                String resp;
+                try (java.util.Scanner scanner = new java.util.Scanner(
+                        code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream(),
+                        java.nio.charset.StandardCharsets.UTF_8)) {
+                    scanner.useDelimiter("\\A");
+                    resp = scanner.hasNext() ? scanner.next() : "";
+                }
+                if (code == 200) {
+                    javafx.application.Platform.runLater(() -> fetchAndShowProfilePage(stage, role));
+                } else {
+                    javafx.application.Platform.runLater(() -> showAlert("Profile Update Failed", "Failed to update profile (" + code + "):\n" + resp));
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                javafx.application.Platform.runLater(() -> showAlert("Error", ex.getMessage()));
+            }
+        }).start();
     }
 
     // Utility: show an alert dialog
@@ -622,6 +722,7 @@ public class LoginApp extends Application {
             Scene scene = new Scene(root, 500, 400);
             stage.setTitle("Add Restaurant");
             stage.setScene(scene);
+            stage.setMaximized(true);
             stage.centerOnScreen();
         } catch (IOException e) {
             e.printStackTrace();
@@ -756,6 +857,51 @@ public class LoginApp extends Application {
             controller.setOnBack(onBack);
             if (prefillAmount != null) controller.setPrefillAmount(prefillAmount);
             stage.setScene(new javafx.scene.Scene(root));
+            stage.centerOnScreen();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void showRestaurantOrdersScreen(javafx.stage.Stage stage) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/RestaurantOrders.fxml"));
+            javafx.scene.Parent root = loader.load();
+            com.example.foodapp.controller.RestaurantOrdersController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setOnBack(() -> showDashboard(stage, userRole));
+            stage.setScene(new javafx.scene.Scene(root, 1200, 700));
+            stage.setTitle("Order Management");
+            stage.centerOnScreen();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void showSimpleRestaurantOrdersScreen(javafx.stage.Stage stage) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/SimpleRestaurantOrders.fxml"));
+            javafx.scene.Parent root = loader.load();
+            com.example.foodapp.controller.SimpleRestaurantOrdersController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            stage.setScene(new javafx.scene.Scene(root, 800, 600));
+            stage.setTitle("Simple Order Management");
+            stage.centerOnScreen();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    // TODO: Wire this to a button in the seller dashboard for quick testing
+
+    public void showDeliveryManagementScreen(javafx.stage.Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/DeliveryManagement.fxml"));
+            Parent root = loader.load();
+            com.example.foodapp.controller.DeliveryManagementController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setOnBack(() -> showDashboard(stage, userRole));
+            stage.setScene(new javafx.scene.Scene(root, 800, 600));
+            stage.setTitle("Delivery Management");
             stage.centerOnScreen();
         } catch (Exception ex) {
             ex.printStackTrace();

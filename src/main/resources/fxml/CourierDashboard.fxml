@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.CourierDashboardController" alignment="CENTER" spacing="30" style="-fx-background-color: #f8f9fa;">
-    <padding>
-        <Insets top="40" right="40" bottom="40" left="40" />
-    </padding>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="CENTER" prefWidth="600.0" prefHeight="400.0" fx:controller="com.example.foodapp.controller.CourierDashboardController">
     <children>
-        <Label fx:id="welcomeLabel" />
-        <Label fx:id="roleLabel" />
-        <Button fx:id="profileBtn" text="View Profile" />
-        <Button fx:id="logoutBtn" text="Logout" />
-        <VBox fx:id="roleContent" spacing="10" />
+        <Label fx:id="welcomeLabel" style="-fx-font-size: 22px; -fx-font-weight: bold;" />
+        <Label fx:id="roleLabel" style="-fx-font-size: 16px;" />
+        <Button fx:id="deliveryManagementBtn" text="Delivery Management" prefWidth="200.0" />
+        <Button fx:id="profileBtn" text="Profile" prefWidth="200.0" />
+        <Button fx:id="logoutBtn" text="Logout" prefWidth="200.0" />
     </children>
 </VBox> 

@@ -95,13 +95,22 @@ public class MyRestaurantsController {
         }
     }
 
-    public static class RestaurantCell extends ListCell<RestaurantItem> {
-        private final HBox content = new HBox(10);
+    public class RestaurantCell extends ListCell<RestaurantItem> {
+        private final HBox content = new HBox(16);
         private final ImageView imageView = new ImageView();
         private final Label nameLabel = new Label();
+        private final Button editBtn = new Button("Edit");
+        private final Button deleteBtn = new Button("Delete");
         public RestaurantCell() {
-            imageView.setFitHeight(50); imageView.setFitWidth(50);
-            content.getChildren().addAll(imageView, nameLabel);
+            imageView.setFitHeight(60); imageView.setFitWidth(60);
+            imageView.setStyle("-fx-effect: dropshadow(gaussian, #b0b0b0, 6, 0.2, 0, 2); -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #e0e0e0; -fx-border-width: 2; -fx-padding: 6;");
+            nameLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 0 0 0 12;");
+            content.setStyle("-fx-alignment: CENTER_LEFT; -fx-padding: 8 0 8 0;");
+            editBtn.setStyle("-fx-background-color: #2196f3; -fx-text-fill: white; -fx-font-weight: bold;");
+            deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+            content.getChildren().addAll(imageView, nameLabel, editBtn, deleteBtn);
+            editBtn.setOnAction(e -> handleEdit());
+            deleteBtn.setOnAction(e -> handleDelete());
         }
         @Override
         protected void updateItem(RestaurantItem item, boolean empty) {
@@ -110,16 +119,50 @@ public class MyRestaurantsController {
                 setGraphic(null);
             } else {
                 nameLabel.setText(item.name);
-                if (item.logoBase64 != null && !item.logoBase64.isEmpty()) {
+                if (item.logoBase64 != null && item.logoBase64.length() > 20 && !item.logoBase64.startsWith("[")) {
                     try {
-                        byte[] imgBytes = Base64.getDecoder().decode(item.logoBase64);
-                        imageView.setImage(new Image(new ByteArrayInputStream(imgBytes)));
+                        byte[] imgBytes = java.util.Base64.getDecoder().decode(item.logoBase64);
+                        imageView.setImage(new Image(new java.io.ByteArrayInputStream(imgBytes)));
                     } catch (Exception e) { imageView.setImage(null); }
                 } else {
                     imageView.setImage(null);
                 }
                 setGraphic(content);
             }
+        }
+        private void handleEdit() {
+            RestaurantItem item = getItem();
+            if (item == null) return;
+            // TODO: Show edit modal dialog for this restaurant
+        }
+        private void handleDelete() {
+            RestaurantItem item = getItem();
+            if (item == null) return;
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to delete this restaurant and all its menus/items?", ButtonType.YES, ButtonType.NO);
+            confirm.setHeaderText("Confirm Delete");
+            confirm.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.YES) {
+                    new Thread(() -> {
+                        try {
+                            java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/" + item.id);
+                            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("DELETE");
+                            conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                            int code = conn.getResponseCode();
+                            if (code == 200) {
+                                Platform.runLater(() -> {
+                                    getListView().getItems().remove(item);
+                                    messageLabel.setText("Restaurant deleted.");
+                                });
+                            } else {
+                                Platform.runLater(() -> messageLabel.setText("Failed to delete restaurant."));
+                            }
+                        } catch (Exception ex) {
+                            Platform.runLater(() -> messageLabel.setText("Error: " + ex.getMessage()));
+                        }
+                    }).start();
+                }
+            });
         }
     }
 } 

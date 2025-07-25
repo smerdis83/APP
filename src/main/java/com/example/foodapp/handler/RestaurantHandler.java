@@ -152,6 +152,13 @@ public class RestaurantHandler implements HttpHandler {
                 // Set the owner_id to the authenticated seller
                 createReq.setOwnerId(userId);
 
+                // Defensive: Only save logoBase64 if it's a valid Base64 string
+                String logo = createReq.getLogoBase64();
+                if (logo != null && (logo.length() < 20 || logo.startsWith("[") || logo.startsWith("{"))) {
+                    createReq.setLogoBase64(null);
+                }
+                System.out.println("[DEBUG] logoBase64 in handler: " + (createReq.getLogoBase64() == null ? "null" : createReq.getLogoBase64().substring(0, Math.min(40, createReq.getLogoBase64().length()))));
+
                 // Insert into DB
                 try {
                     restaurantDao.createRestaurant(createReq);

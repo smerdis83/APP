@@ -12,6 +12,7 @@
         <Button fx:id="profileBtn" text="View Profile" />
         <Button fx:id="logoutBtn" text="Logout" />
         <Button fx:id="orderHistoryBtn" text="Order History" />
+        <Button fx:id="activeOrdersBtn" text="Active Orders" />
         <Button fx:id="favoritesBtn" text="Favorites" />
         <Button fx:id="restaurantListBtn" text="Restaurant List" />
         <Button fx:id="topUpWalletBtn" text="Top Up Wallet" />
