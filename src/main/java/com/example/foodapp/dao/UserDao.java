@@ -185,6 +185,15 @@ public class UserDao {
         return 0;
     }
 
+    public void deleteUser(int userId) throws SQLException {
+        String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+        }
+    }
+
     /**
      * Helper method to build a User object from a ResultSet row.
      */

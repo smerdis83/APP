@@ -48,20 +48,71 @@ public class AdminHandler implements HttpHandler {
         if (!"ADMIN".equals(role)) { sendJson(exchange, 403, Map.of("error", "Forbidden: must be an admin")); return; }
 
         try {
+            System.out.println("[ADMIN HANDLER] Path: " + path + ", Method: " + method);
+            System.out.println("[ADMIN HANDLER] Auth Header: " + authHeader);
             if (method.equalsIgnoreCase("GET") && "/admin/transactions".equals(path)) {
                 // Admin: view all transactions
                 List<Transaction> txs = orderDao.getAllTransactions();
                 sendJson(exchange, 200, txs);
                 return;
             } else if (method.equalsIgnoreCase("GET") && "/admin/orders".equals(path)) {
+                System.out.println("[ADMIN HANDLER] GET /admin/orders called");
                 // Admin: view all orders
                 List<Order> orders = orderDao.getAllOrders();
                 sendJson(exchange, 200, orders);
                 return;
             } else if (method.equalsIgnoreCase("GET") && "/admin/users".equals(path)) {
+                System.out.println("[ADMIN HANDLER] GET /admin/users called");
                 // Admin: view all users
                 List<User> users = userDao.findAll();
                 sendJson(exchange, 200, users);
+                return;
+            } else if (method.equalsIgnoreCase("DELETE") && path.matches("/admin/users/\\d+$")) {
+                int userId = Integer.parseInt(path.substring("/admin/users/".length()));
+                try {
+                    User user = userDao.findById(userId);
+                    if (user == null) {
+                        sendJson(exchange, 404, Map.of("error", "User not found"));
+                        return;
+                    }
+                    userDao.deleteUser(userId);
+                    sendJson(exchange, 200, Map.of("message", "User deleted"));
+                } catch (Exception e) {
+                    sendJson(exchange, 500, Map.of("error", "Database error: " + e.getMessage()));
+                }
+                return;
+            } else if (method.equalsIgnoreCase("DELETE") && path.matches("/admin/restaurants/\\d+$")) {
+                int restId = Integer.parseInt(path.substring("/admin/restaurants/".length()));
+                try {
+                    var restDao = new com.example.foodapp.dao.RestaurantDao();
+                    var restaurant = restDao.findById(restId);
+                    if (restaurant == null) {
+                        sendJson(exchange, 404, Map.of("error", "Restaurant not found"));
+                        return;
+                    }
+                    restDao.deleteRestaurant(restId);
+                    sendJson(exchange, 200, Map.of("message", "Restaurant deleted"));
+                } catch (Exception e) {
+                    sendJson(exchange, 500, Map.of("error", "Database error: " + e.getMessage()));
+                }
+                return;
+            } else if (method.equalsIgnoreCase("DELETE") && path.matches("/admin/orders/\\d+$")) {
+                int orderId = Integer.parseInt(path.substring("/admin/orders/".length()));
+                System.out.println("[ADMIN HANDLER] DELETE /admin/orders/" + orderId);
+                try {
+                    var order = orderDao.getOrderById(orderId);
+                    if (order == null) {
+                        System.out.println("[ADMIN HANDLER] Order not found: " + orderId);
+                        sendJson(exchange, 404, Map.of("error", "Order not found"));
+                        return;
+                    }
+                    orderDao.deleteOrder(orderId);
+                    System.out.println("[ADMIN HANDLER] Order deleted: " + orderId);
+                    sendJson(exchange, 200, Map.of("message", "Order deleted"));
+                } catch (Exception e) {
+                    System.out.println("[ADMIN HANDLER] Exception deleting order: " + e.getMessage());
+                    sendJson(exchange, 500, Map.of("error", "Database error: " + e.getMessage()));
+                }
                 return;
             } else {
                 sendJson(exchange, 404, Map.of("error", "Not Found"));

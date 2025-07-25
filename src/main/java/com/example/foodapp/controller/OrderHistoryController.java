@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import javafx.scene.layout.HBox;
 
 public class OrderHistoryController {
     @FXML public ListView<OrderSummary> orderList;
@@ -32,6 +33,12 @@ public class OrderHistoryController {
     public void setOnOrderSelected(Consumer<OrderSummary> callback) { this.onOrderSelected = callback; }
     public void setActiveOnly(boolean activeOnly) { this.activeOnly = activeOnly; }
 
+    public interface OnRateOrder {
+        void rateOrder(OrderSummary order);
+    }
+    private OnRateOrder onRateOrder;
+    public void setOnRateOrder(OnRateOrder cb) { this.onRateOrder = cb; }
+
     @FXML
     public void initialize() {
         orderList.setItems(orders);
@@ -40,6 +47,7 @@ public class OrderHistoryController {
                 super.updateItem(order, empty);
                 if (empty || order == null) {
                     setText(null);
+                    setGraphic(null);
                     setStyle("");
                 } else {
                     String restaurant = (order.restaurant == null || order.restaurant.isEmpty()) ? "Unknown Restaurant" : order.restaurant;
@@ -47,34 +55,49 @@ public class OrderHistoryController {
                     String status = order.status == null ? "" : order.status.toLowerCase();
                     String displayStatus = status;
                     String color = "";
-                    // Custom grouping and coloring for active orders
                     if (status.contains("waiting for vendor") || status.contains("paid") || status.equals("submitted")) {
                         displayStatus = "Waiting for Vendor / Paid";
-                        color = "#ffb6c1"; // pink
+                        color = "#ffb6c1";
                     } else if (status.contains("waiting vendor")) {
                         displayStatus = "Waiting for Vendor";
-                        color = "#ffa500"; // orange
+                        color = "#ffa500";
                     } else if (status.equals("accepted")) {
-                        // Check courierId
                         if (order.courierId != null && !order.courierId.isEmpty() && !order.courierId.equals("0")) {
                             displayStatus = "Courier in the way of restaurant";
-                            color = "#dc3545"; // red
+                            color = "#dc3545";
                         } else {
                             displayStatus = "Food is preparing in the restaurant";
-                            color = "#28a745"; // green
+                            color = "#28a745";
                         }
                     } else if (status.contains("served")) {
                         displayStatus = "Waiting for courier";
-                        color = "#c71585"; // dark pink
+                        color = "#c71585";
                     } else if (status.contains("received")) {
                         displayStatus = "Courier on the way to the address";
-                        color = "#ffe066"; // yellow
+                        color = "#ffe066";
                     } else if (status.contains("delivered")) {
                         displayStatus = "Delivered";
-                        color = "#b3e0ff"; // light blue
+                        color = "#b3e0ff";
                     }
-                    setText(restaurant + " | " + price + " | " + displayStatus);
                     setStyle("-fx-background-color: " + color + ";");
+
+                    Label infoLabel = new Label(restaurant + " | " + price + " | " + displayStatus);
+                    infoLabel.setMaxWidth(Double.MAX_VALUE);
+                    infoLabel.setStyle("-fx-padding: 0 10 0 0;");
+
+                    if (status.contains("delivered")) {
+                        Button rateBtn = new Button("Comment");
+                        rateBtn.setOnAction(e -> {
+                            if (onRateOrder != null) onRateOrder.rateOrder(order);
+                        });
+                        HBox hbox = new HBox(10, infoLabel, rateBtn);
+                        hbox.setFillHeight(true);
+                        setGraphic(hbox);
+                        setText(null);
+                    } else {
+                        setGraphic(infoLabel);
+                        setText(null);
+                    }
                 }
             }
         });

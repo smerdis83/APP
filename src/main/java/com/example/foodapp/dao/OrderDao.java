@@ -348,6 +348,15 @@ public class OrderDao {
         return orders;
     }
 
+    public void deleteOrder(int orderId) throws SQLException {
+        String sql = "DELETE FROM orders WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderId);
+            ps.executeUpdate();
+        }
+    }
+
     private Order mapRowToOrder(ResultSet rs) throws SQLException {
         Order order = new Order();
         order.setId(rs.getInt("id"));

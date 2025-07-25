@@ -60,6 +60,7 @@ public class App {
         server.createContext("/admin/transactions", adminHandler);
         server.createContext("/admin/orders", adminHandler);
         server.createContext("/admin/users", adminHandler);
+        server.createContext("/admin/restaurants", adminHandler);
 
         VendorItemHandler vendorItemHandler = new VendorItemHandler();
         server.createContext("/vendors", vendorItemHandler);

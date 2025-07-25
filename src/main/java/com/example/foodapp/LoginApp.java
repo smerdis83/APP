@@ -88,7 +88,13 @@ public class LoginApp extends Application {
                     String token = extractTokenFromJson(resp);
                     this.jwtToken = token;
                     this.userRole = role;
-                    javafx.application.Platform.runLater(() -> showDashboard(primaryStage, role));
+                    javafx.application.Platform.runLater(() -> {
+                        if ("ADMIN".equalsIgnoreCase(role)) {
+                            showAdminDashboardScreen(primaryStage);
+                        } else {
+                            showDashboard(primaryStage, role);
+                        }
+                    });
                 } else {
                     String msg = "Login failed (" + code + "):\n" + resp;
                     javafx.application.Platform.runLater(() -> controller.showError(msg));
@@ -219,9 +225,27 @@ public class LoginApp extends Application {
             controller.setJwtToken(this.jwtToken);
             controller.setActiveOnly(activeOnly);
             controller.setOnBack(() -> showDashboard(stage, userRole));
+            controller.setOnRateOrder(order -> showRateOrderScreen(stage, order));
             fetchOrders(controller, activeOnly);
             Scene scene = new Scene(root, 800, 600);
             stage.setTitle(activeOnly ? "Active Orders" : "Order History");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showRateOrderScreen(Stage stage, com.example.foodapp.controller.OrderHistoryController.OrderSummary order) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RateOrder.fxml"));
+            Parent root = loader.load();
+            com.example.foodapp.controller.RateOrderController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setOrderId(Integer.parseInt(order.id)); // assuming OrderSummary has id field
+            controller.setOnBack(v -> showOrderHistoryScreen(stage));
+            Scene scene = new Scene(root, 500, 600);
+            stage.setTitle("Rate Order");
             stage.setScene(scene);
             stage.centerOnScreen();
         } catch (Exception e) {
@@ -737,6 +761,7 @@ public class LoginApp extends Application {
             controller.setJwtToken(this.jwtToken);
             controller.setOnBack(() -> showDashboard(stage, userRole));
             controller.setOnManageMenus(item -> showMenuListScreen(stage, item.id, item.name));
+            controller.setOnEditRestaurant(item -> showEditRestaurantScreen(stage, item));
             Scene scene = new Scene(root, 800, 600);
             stage.setTitle("My Restaurants");
             stage.setScene(scene);
@@ -880,12 +905,13 @@ public class LoginApp extends Application {
 
     public void showSimpleRestaurantOrdersScreen(javafx.stage.Stage stage) {
         try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/SimpleRestaurantOrders.fxml"));
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/RestaurantOrders.fxml"));
             javafx.scene.Parent root = loader.load();
-            com.example.foodapp.controller.SimpleRestaurantOrdersController controller = loader.getController();
+            com.example.foodapp.controller.RestaurantOrdersController controller = loader.getController();
             controller.setJwtToken(this.jwtToken);
+            controller.setOnBack(() -> showDashboard(stage, userRole));
             stage.setScene(new javafx.scene.Scene(root, 800, 600));
-            stage.setTitle("Simple Order Management");
+            stage.setTitle("Restaurant Order Management");
             stage.centerOnScreen();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -894,17 +920,45 @@ public class LoginApp extends Application {
     // TODO: Wire this to a button in the seller dashboard for quick testing
 
     public void showDeliveryManagementScreen(javafx.stage.Stage stage) {
+        // TODO: Implement delivery management screen
+        // For now, just show an alert
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle("Delivery Management");
+        alert.setHeaderText("Feature Not Yet Implemented");
+        alert.setContentText("Delivery management functionality will be implemented in a future update.");
+        alert.showAndWait();
+    }
+
+    private void showEditRestaurantScreen(Stage stage, com.example.foodapp.controller.MyRestaurantsController.RestaurantItem restaurantItem) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/DeliveryManagement.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/EditRestaurant.fxml"));
             Parent root = loader.load();
-            com.example.foodapp.controller.DeliveryManagementController controller = loader.getController();
+            com.example.foodapp.controller.EditRestaurantController controller = loader.getController();
             controller.setJwtToken(this.jwtToken);
-            controller.setOnBack(() -> showDashboard(stage, userRole));
-            stage.setScene(new javafx.scene.Scene(root, 800, 600));
-            stage.setTitle("Delivery Management");
+            controller.setRestaurantItem(restaurantItem);
+            controller.setOnBack(() -> showMyRestaurantsScreen(stage));
+            Scene scene = new Scene(root, 600, 700);
+            stage.setTitle("Edit Restaurant - " + restaurantItem.name);
+            stage.setScene(scene);
             stage.centerOnScreen();
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showAdminDashboardScreen(Stage stage) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/AdminDashboard.fxml"));
+            javafx.scene.Parent root = loader.load();
+            com.example.foodapp.controller.AdminDashboardController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setOnLogout(() -> showLoginScreen());
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1200, 800);
+            stage.setTitle("Admin Dashboard");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
