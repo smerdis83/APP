@@ -4,18 +4,18 @@ A comprehensive Java-based food delivery backend system with JavaFX frontend, fe
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Installation & Setup](#installation--setup)
-- [Database Schema](#database-schema)
-- [API Endpoints](#api-endpoints)
-- [User Roles & Permissions](#user-roles--permissions)
-- [Key Features Explained](#key-features-explained)
-- [Usage Guide](#usage-guide)
-- [Development](#development)
+- [Overview](#-overview)
+- [Architecture](#️-architecture)
+- [Features](#-features)
+- [Technology Stack](#️-technology-stack)
+- [Project Structure](#-project-structure)
+- [Installation & Setup](#-installation--setup)
+- [Database Schema](#️-database-schema)
+- [API Endpoints](#-api-endpoints)
+- [User Roles & Permissions](#-user-roles--permissions)
+- [Key Features Explained](#-key-features-explained)
+- [Usage Guide](#-usage-guide)
+- [Development](#️-development)
 
 ## 🎯 Overview
 
