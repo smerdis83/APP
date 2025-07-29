@@ -42,6 +42,7 @@ public class AuthService {
 
         // 4) Create User and save
         User user = new User(fullName, phone, email, passwordHash, role, null, null, null);
+        user.setEnabled(false); // New users are not enabled by default
         userDao.createUser(user);
         return user;
     }

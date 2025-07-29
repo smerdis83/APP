@@ -115,6 +115,52 @@ public class CourierHandler implements HttpHandler {
                         sendJson(exchange, 409, new ErrorResponse("Order is not available for assignment (already assigned, not found, or wrong status)"));
                         return;
                     }
+                    // Transfer additional_fee from seller to courier
+                    try {
+                        com.example.foodapp.dao.UserDao userDao = new com.example.foodapp.dao.UserDao();
+                        com.example.foodapp.dao.RestaurantDao restaurantDao = new com.example.foodapp.dao.RestaurantDao();
+                        com.example.foodapp.model.entity.Restaurant restaurant = restaurantDao.findById(updated.getVendorId());
+                        int sellerId = restaurant.getOwnerId();
+                        int additionalFee = updated.getAdditionalFee();
+                        int sellerBalance = userDao.getWalletBalance(sellerId);
+                        int courierBalance = userDao.getWalletBalance(courierId);
+                        
+                        System.out.println("[DEBUG] Order details: ID=" + orderId + ", VendorID=" + updated.getVendorId() + ", AdditionalFee=" + additionalFee);
+                        System.out.println("[DEBUG] Restaurant details: ID=" + restaurant.getId() + ", OwnerID=" + sellerId + ", AdditionalFee=" + restaurant.getAdditionalFee());
+                        System.out.println("[DEBUG] Transferring additional fee: " + additionalFee + " from seller " + sellerId + " (balance=" + sellerBalance + ") to courier " + courierId + " (balance=" + courierBalance + ")");
+                        
+                        if (additionalFee > 0) {
+                            System.out.println("[DEBUG] Before transfer - Seller ID: " + sellerId + ", Balance: " + sellerBalance + ", Additional Fee: " + additionalFee);
+                            System.out.println("[DEBUG] Before transfer - Courier ID: " + courierId + ", Balance: " + courierBalance);
+                            
+                            int newSellerBalance = sellerBalance - additionalFee;
+                            int newCourierBalance = courierBalance + additionalFee;
+                            
+                            System.out.println("[DEBUG] Calculating new balances - Seller: " + sellerBalance + " - " + additionalFee + " = " + newSellerBalance);
+                            System.out.println("[DEBUG] Calculating new balances - Courier: " + courierBalance + " + " + additionalFee + " = " + newCourierBalance);
+                            
+                            userDao.updateWalletBalance(sellerId, newSellerBalance);
+                            userDao.updateWalletBalance(courierId, newCourierBalance);
+                            
+                            // Verify the updates
+                            int sellerBalanceAfter = userDao.getWalletBalance(sellerId);
+                            int courierBalanceAfter = userDao.getWalletBalance(courierId);
+                            System.out.println("[DEBUG] After transfer: seller balance=" + sellerBalanceAfter + ", courier balance=" + courierBalanceAfter);
+                            
+                            if (sellerBalanceAfter != newSellerBalance || courierBalanceAfter != newCourierBalance) {
+                                System.err.println("[ERROR] Wallet balance update verification failed!");
+                                System.err.println("[ERROR] Expected seller: " + newSellerBalance + ", Got: " + sellerBalanceAfter);
+                                System.err.println("[ERROR] Expected courier: " + newCourierBalance + ", Got: " + courierBalanceAfter);
+                            }
+                        } else {
+                            System.out.println("[DEBUG] No transfer needed - additional fee is 0");
+                        }
+                    } catch (Exception e) {
+                        System.out.println("[DEBUG] Error during transfer: " + e.getMessage());
+                        e.printStackTrace();
+                        sendJson(exchange, 500, new ErrorResponse("Failed to transfer additional fee: " + e.getMessage()));
+                        return;
+                    }
                     orderDao.insertOrderStatusHistory(orderId, newStatus, "courier");
                     sendJson(exchange, 200, java.util.Map.of("message", "Order accepted successfully", "order", updated));
                 } else if ("received".equals(newStatus) || "delivered".equals(newStatus)) {

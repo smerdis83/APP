@@ -170,7 +170,11 @@ public class UserDao {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, newBalance);
             ps.setInt(2, userId);
-            ps.executeUpdate();
+            int affectedRows = ps.executeUpdate();
+            System.out.println("[DEBUG] updateWalletBalance: User ID=" + userId + ", New Balance=" + newBalance + ", Affected Rows=" + affectedRows);
+            if (affectedRows == 0) {
+                System.err.println("[ERROR] updateWalletBalance: No rows affected for user ID=" + userId);
+            }
         }
     }
     public int getWalletBalance(int userId) throws SQLException {
@@ -179,14 +183,29 @@ public class UserDao {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt("wallet_balance");
+                if (rs.next()) {
+                    int balance = rs.getInt("wallet_balance");
+                    System.out.println("[DEBUG] getWalletBalance: User ID=" + userId + ", Balance=" + balance);
+                    return balance;
+                } else {
+                    System.err.println("[ERROR] getWalletBalance: No user found with ID=" + userId);
+                    return 0;
+                }
             }
         }
-        return 0;
     }
 
     public void deleteUser(int userId) throws SQLException {
         String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+        }
+    }
+
+    public void enableUser(int userId) throws SQLException {
+        String sql = "UPDATE users SET enabled = TRUE WHERE id = ?";
         try (Connection conn = JdbcUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);

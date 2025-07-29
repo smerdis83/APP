@@ -43,8 +43,26 @@
                         <ListView fx:id="basketList" prefHeight="400.0" prefWidth="350.0" />
                         <HBox alignment="CENTER_RIGHT" spacing="10">
                             <children>
-                                <Label style="-fx-font-size: 20px;" text="Total:" />
-                                <Label fx:id="totalPrice" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+                                <Label style="-fx-font-size: 18px;" text="Items Price:" />
+                                <Label fx:id="itemsPriceLabel" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                            <children>
+                                <Label style="-fx-font-size: 16px;" text="Tax:" />
+                                <Label fx:id="taxLabel" style="-fx-font-size: 16px; -fx-text-fill: #C2185B;" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                            <children>
+                                <Label style="-fx-font-size: 16px;" text="Additional Fee:" />
+                                <Label fx:id="additionalFeeLabel" style="-fx-font-size: 16px; -fx-text-fill: #C2185B;" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                            <children>
+                                <Label style="-fx-font-size: 20px;" text="Sum:" />
+                                <Label fx:id="sumLabel" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
                             </children>
                         </HBox>
                         <Button fx:id="orderBtn" prefWidth="200.0" style="-fx-font-size: 22px; -fx-background-color: #4caf50; -fx-text-fill: white; -fx-font-weight: bold;" text="ORDER" />

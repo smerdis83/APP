@@ -50,4 +50,11 @@ public class SessionManager {
         }
         return null;
     }
+    
+    public int getCurrentUserId() {
+        if (currentUser != null) {
+            return currentUser.getId();
+        }
+        return -1; // Return -1 if no user is logged in
+    }
 } 

@@ -15,6 +15,7 @@
         <Button fx:id="activeOrdersBtn" text="Active Orders" />
         <Button fx:id="favoritesBtn" text="Favorites" />
         <Button fx:id="restaurantListBtn" text="Restaurant List" />
+        <Button fx:id="searchBtn" text="Search Foods &amp; Restaurants" />
         <Button fx:id="topUpWalletBtn" text="Top Up Wallet" />
         <VBox fx:id="roleContent" spacing="10" />
     </children>

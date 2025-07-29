@@ -26,6 +26,13 @@ public class RestaurantPageController {
     @FXML private Button prevMenuBtn;
     @FXML private Button nextMenuBtn;
     @FXML private Label menuNameLabel;
+    @FXML private Label itemsPriceLabel;
+    @FXML private Label taxLabel;
+    @FXML private Label additionalFeeLabel;
+    @FXML private Label sumLabel;
+    private int taxFee = 0;
+    private int additionalFee = 0;
+    private double taxPercent = 0.0;
 
     private int restaurantId;
     private String jwtToken;
@@ -76,6 +83,8 @@ public class RestaurantPageController {
         updateBasket();
         orderBtn.setOnAction(e -> handleOrder());
         if (backBtn != null) backBtn.setOnAction(e -> { if (onBack != null) onBack.run(); });
+        // Fetch restaurant fees when page is loaded
+        fetchRestaurantFeesAndUpdateLabels();
     }
 
     private void fetchMenus() {
@@ -193,7 +202,6 @@ public class RestaurantPageController {
                 String supplyStr = json.substring(supplyStart, supplyEnd).replaceAll("[^0-9]", "").trim();
                 if (!supplyStr.isEmpty()) supply = Integer.parseInt(supplyStr);
             }
-            // Parse image_base64 if present
             int imageIdx = json.indexOf("\"image_base64\":", idx);
             String imageBase64 = null;
             if (imageIdx != -1) {
@@ -201,25 +209,106 @@ public class RestaurantPageController {
                 int imageEnd = json.indexOf('"', imageStart);
                 imageBase64 = json.substring(imageStart, imageEnd);
             }
-            list.add(new FoodItem(id, name, price, supply, imageBase64));
+            FoodItem food = new FoodItem(id, name, price, supply, imageBase64);
+            list.add(food);
+            fetchAndSetFoodAvgRating(food);
             idx = nameEnd;
         }
         return list;
     }
 
+    private void fetchAndSetFoodAvgRating(FoodItem food) {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("http://localhost:8000/ratings/items/" + food.id);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                if (jwtToken != null) conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    java.util.Scanner sc = new java.util.Scanner(conn.getInputStream(), "UTF-8");
+                    String json = sc.useDelimiter("\\A").next();
+                    sc.close();
+                    int avgIdx = json.indexOf("\"avg_rating\":");
+                    double avg = -1;
+                    if (avgIdx != -1) {
+                        int start = avgIdx + 13;
+                        int end = json.indexOf(',', start);
+                        if (end == -1) end = json.indexOf('}', start);
+                        avg = Double.parseDouble(json.substring(start, end).replaceAll("[^0-9\\.]", ""));
+                    }
+                    double finalAvg = avg;
+                    Platform.runLater(() -> {
+                        food.avgRating = finalAvg;
+                        foodList.refresh();
+                    });
+                }
+            } catch (Exception ignore) {}
+        }).start();
+    }
+
+    private void fetchRestaurantFeesAndUpdateLabels() {
+        System.out.println("[DEBUG] fetchRestaurantFeesAndUpdateLabels called. restaurantId=" + restaurantId);
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId);
+                System.out.println("[DEBUG] Fetching: " + url);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                if (jwtToken != null) conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                int code = conn.getResponseCode();
+                System.out.println("[DEBUG] Response code: " + code);
+                if (code == 200) {
+                    java.util.Scanner sc = new java.util.Scanner(conn.getInputStream(), "UTF-8");
+                    String json = sc.useDelimiter("\\A").next();
+                    sc.close();
+                    System.out.println("[DEBUG] Restaurant JSON: " + json); // Debug output
+                    int tax = extractIntFromJson(json, "tax_fee");
+                    int add = extractIntFromJson(json, "additional_fee");
+                    Platform.runLater(() -> {
+                        taxFee = tax;
+                        additionalFee = add;
+                        // If taxFee is a percentage, convert to percent
+                        taxPercent = taxFee / 100.0;
+                        updateBasket();
+                    });
+                }
+            } catch (Exception e) {
+                System.out.println("[DEBUG] Exception in fetchRestaurantFeesAndUpdateLabels: " + e);
+            }
+        }).start();
+    }
+
+    private int extractIntFromJson(String json, String key) {
+        String searchKey = "\"" + key + "\":";
+        int idx = json.indexOf(searchKey);
+        if (idx == -1) return 0;
+        idx += searchKey.length();
+        StringBuilder num = new StringBuilder();
+        while (idx < json.length() && (Character.isDigit(json.charAt(idx)) || json.charAt(idx) == '-')) {
+            num.append(json.charAt(idx));
+            idx++;
+        }
+        try { return Integer.parseInt(num.toString()); } catch (Exception e) { return 0; }
+    }
+
     private void updateBasket() {
         basketItems.clear();
-        int total = 0;
+        int itemsPrice = 0;
         for (Map.Entry<Integer, Integer> entry : basketMap.entrySet()) {
-            int foodId = entry.getKey();
+            FoodItem food = masterFoodMap.get(entry.getKey());
             int qty = entry.getValue();
-            FoodItem item = masterFoodMap.get(foodId);
-            if (item != null && qty > 0) {
-                basketItems.add(new BasketItem(item, qty));
-                total += item.price * qty;
+            if (food != null && qty > 0) {
+                basketItems.add(new BasketItem(food, qty));
+                itemsPrice += food.price * qty;
             }
         }
-        totalPrice.setText(total + "");
+        itemsPriceLabel.setText(String.valueOf(itemsPrice));
+        int tax = (int) Math.round(itemsPrice * taxPercent);
+        taxLabel.setText(tax + "");
+        additionalFeeLabel.setText(additionalFee + "");
+        int sum = itemsPrice + tax + additionalFee;
+        sumLabel.setText(String.valueOf(sum));
     }
 
     private void handleOrder() {
@@ -253,6 +342,7 @@ public class RestaurantPageController {
         private final Button plusBtn = new Button("+");
         private final Button minusBtn = new Button("–");
         private final Label qtyLabel = new Label("0");
+        private final Label avgRatingLabel = new Label();
         public FoodCell() {
             foodImageView.setFitHeight(50);
             foodImageView.setFitWidth(50);
@@ -269,7 +359,7 @@ public class RestaurantPageController {
             minusBtn.setMinWidth(32);
             minusBtn.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
             content.setSpacing(8);
-            content.getChildren().addAll(foodImageView, nameLabel, priceLabel, minusBtn, qtyLabel, plusBtn);
+            content.getChildren().addAll(foodImageView, nameLabel, priceLabel, avgRatingLabel, minusBtn, qtyLabel, plusBtn);
             plusBtn.setOnAction(e -> changeQty(1));
             minusBtn.setOnAction(e -> changeQty(-1));
         }
@@ -292,6 +382,11 @@ public class RestaurantPageController {
                     } catch (Exception e) { foodImageView.setImage(null); }
                 } else {
                     foodImageView.setImage(null);
+                }
+                if (item.avgRating >= 0) {
+                    avgRatingLabel.setText("⭐ " + String.format("%.2f", item.avgRating));
+                } else {
+                    avgRatingLabel.setText("");
                 }
                 setGraphic(content);
             }
@@ -340,6 +435,7 @@ public class RestaurantPageController {
         public final int price;
         public final int supply;
         public final String imageBase64;
+        public double avgRating = -1;
         public FoodItem(int id, String name, int price, int supply, String imageBase64) {
             this.id = id; this.name = name; this.price = price; this.supply = supply; this.imageBase64 = imageBase64;
         }

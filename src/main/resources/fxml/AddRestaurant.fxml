@@ -8,6 +8,8 @@
         <TextField fx:id="nameField" promptText="Restaurant Name (required)" prefWidth="300.0" />
         <TextField fx:id="addressField" promptText="Address (required)" prefWidth="300.0" />
         <TextField fx:id="phoneField" promptText="Phone (required)" prefWidth="300.0" />
+        <TextArea fx:id="descriptionField" promptText="Description (optional)" prefWidth="300.0" prefHeight="60.0" wrapText="true" />
+        <TextField fx:id="workingHoursField" promptText="Working Hours (e.g. 08:00-18:00)" prefWidth="300.0" />
         <ImageView fx:id="logoImageView" fitWidth="120" fitHeight="120" preserveRatio="true" />
         <Button fx:id="chooseLogoBtn" text="Choose Logo Image" />
         <TextField fx:id="taxFeeField" promptText="Tax Fee (optional, integer)" prefWidth="300.0" />

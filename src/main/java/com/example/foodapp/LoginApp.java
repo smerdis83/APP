@@ -37,6 +37,7 @@ public class LoginApp extends Application {
             controller.setOnLoginSuccess((phone, password) -> handleLogin(phone, password, controller));
             controller.setOnRegister(this::showRegisterScreen);
             Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             primaryStage.setTitle("Login App");
             primaryStage.setScene(scene);
             primaryStage.show();
@@ -53,6 +54,7 @@ public class LoginApp extends Application {
             controller.setOnRegister(data -> handleRegister(data, controller));
             controller.setOnBack(this::showLoginScreen);
             Scene scene = new Scene(root, 650, 500);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             primaryStage.setTitle("Register");
             primaryStage.setScene(scene);
             primaryStage.show();
@@ -174,7 +176,9 @@ public class LoginApp extends Application {
                 controller.setOnRestaurantList(() -> showRestaurantListScreen(stage));
                 controller.setOnOrderManagement(() -> showRestaurantOrdersScreen(stage));
                 controller.setOnSimpleOrderViewer(() -> showSimpleRestaurantOrdersScreen(stage));
+                controller.setOnSalesAnalytics(() -> showSalesAnalyticsScreen(stage));
                 Scene scene = new Scene(root, 1000, 700);
+                scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
                 stage.setTitle("Seller Dashboard");
                 stage.setScene(scene);
                 stage.centerOnScreen();
@@ -188,6 +192,7 @@ public class LoginApp extends Application {
                 controller.setOnLogout(() -> handleLogout());
                 controller.setOnDeliveryManagement(() -> showDeliveryManagementScreen(stage));
                 Scene scene = new Scene(root, 1000, 700);
+                scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
                 stage.setTitle("Courier Dashboard");
                 stage.setScene(scene);
                 stage.centerOnScreen();
@@ -204,7 +209,9 @@ public class LoginApp extends Application {
                 controller.setOnOrderHistory(() -> showOrderHistoryScreen(stage));
                 controller.setOnFavorites(() -> showFavoritesScreen(stage));
                 controller.setOnRestaurantList(() -> showRestaurantListScreen(stage));
+                controller.setOnSearch(() -> showSearchScreen(stage));
                 Scene scene = new Scene(root, 1000, 700);
+                scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
                 stage.setTitle("Buyer Dashboard");
                 stage.setScene(scene);
                 stage.centerOnScreen();
@@ -228,6 +235,7 @@ public class LoginApp extends Application {
             controller.setOnRateOrder(order -> showRateOrderScreen(stage, order));
             fetchOrders(controller, activeOnly);
             Scene scene = new Scene(root, 800, 600);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle(activeOnly ? "Active Orders" : "Order History");
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -245,6 +253,7 @@ public class LoginApp extends Application {
             controller.setOrderId(Integer.parseInt(order.id)); // assuming OrderSummary has id field
             controller.setOnBack(v -> showOrderHistoryScreen(stage));
             Scene scene = new Scene(root, 500, 600);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Rate Order");
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -364,6 +373,7 @@ public class LoginApp extends Application {
             controller.setOnBack(() -> showOrderHistoryScreen(stage));
             fetchOrderDetails(controller, order.id);
             Scene scene = new Scene(root, 1000, 700);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Order Details");
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -579,6 +589,7 @@ public class LoginApp extends Application {
             }
             return "Empty";
         };
+        
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ProfileScreen.fxml"));
             Parent root = loader.load();
@@ -589,7 +600,7 @@ public class LoginApp extends Application {
                 getField.apply("email"),
                 getField.apply("role"),
                 getField.apply("address"),
-                getField.apply("walletBalance"),
+                getWalletBalance(json),
                 getField.apply("enabled"),
                 getField.apply("createdAt"),
                 getField.apply("updatedAt"),
@@ -598,12 +609,40 @@ public class LoginApp extends Application {
             controller.setOnBack(() -> showDashboard(stage, role));
             controller.setOnSave(data -> saveProfile(stage, role, data));
             Scene scene = new Scene(root, 1000, 700);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Profile");
             stage.setScene(scene);
             stage.centerOnScreen();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    // Special handling for wallet balance - show "0" instead of "Empty" for null values
+    private String getWalletBalance(String json) {
+        String marker = "\"walletBalance\":";
+        int idx = json.indexOf(marker);
+        if (idx != -1) {
+            int start = idx + marker.length();
+            char first = json.charAt(start);
+            if (first == '"') {
+                int end = json.indexOf('"', start + 1);
+                if (end > start + 1) {
+                    String val = json.substring(start + 1, end);
+                    return val.isEmpty() ? "0" : val;
+                }
+            } else if (first == 'n') { // null
+                return "0";
+            } else { // number or boolean
+                int end = json.indexOf(',', start);
+                if (end == -1) end = json.indexOf('}', start);
+                if (end > start) {
+                    String val = json.substring(start, end).replaceAll("[\n\r]", "").trim();
+                    return val.isEmpty() ? "0" : val;
+                }
+            }
+        }
+        return "0"; // Default to 0 if field not found
     }
 
     private void saveProfile(Stage stage, String role, com.example.foodapp.controller.ProfileController.ProfileData data) {
@@ -693,6 +732,7 @@ public class LoginApp extends Application {
             });
             controller.setOnRestaurantClick(item -> showRestaurantPage(stage, item.id, item.name, item.logoBase64, () -> showFavoritesScreen(stage)));
             Scene scene = new Scene(root, 500, 600);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Favorites");
             stage.setScene(scene);
             stage.setFullScreen(true);
@@ -711,6 +751,7 @@ public class LoginApp extends Application {
             controller.setRestaurant(restaurantId, restaurantName, logoBase64, this.jwtToken);
             controller.setOnBack(onBack);
             Scene scene = new Scene(root, 1200, 800);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle(restaurantName);
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -728,6 +769,7 @@ public class LoginApp extends Application {
             controller.setOnBack(() -> showDashboard(stage, userRole));
             controller.setOnRestaurantClick(item -> showRestaurantPage(stage, item.id, item.name, item.logoBase64, () -> showRestaurantListScreen(stage)));
             Scene scene = new Scene(root, 1000, 800);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("All Restaurants");
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -744,6 +786,7 @@ public class LoginApp extends Application {
             controller.setJwtToken(this.jwtToken);
             controller.setOnBack(() -> showDashboard(stage, userRole));
             Scene scene = new Scene(root, 500, 400);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Add Restaurant");
             stage.setScene(scene);
             stage.setMaximized(true);
@@ -763,6 +806,7 @@ public class LoginApp extends Application {
             controller.setOnManageMenus(item -> showMenuListScreen(stage, item.id, item.name));
             controller.setOnEditRestaurant(item -> showEditRestaurantScreen(stage, item));
             Scene scene = new Scene(root, 800, 600);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("My Restaurants");
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -783,6 +827,7 @@ public class LoginApp extends Application {
             controller.setOnMenuDetail(menuItem -> showMenuDetailScreen(stage, restaurantId, restaurantName, menuItem.title));
             controller.loadMenus();
             Scene scene = new Scene(root, 500, 400);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Menus for " + restaurantName);
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -800,6 +845,7 @@ public class LoginApp extends Application {
             controller.setDefaultRestaurantId(restaurantId);
             controller.setOnBack(() -> showMenuListScreen(stage, restaurantId, restaurantName));
             Scene scene = new Scene(root, 500, 350);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Add Menu to " + restaurantName);
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -819,6 +865,7 @@ public class LoginApp extends Application {
             controller.setOnBack(() -> showMenuListScreen(stage, restaurantId, restaurantName));
             controller.loadFoods();
             Scene scene = new Scene(root, 600, 600);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle(menuTitle + " - " + restaurantName);
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -836,6 +883,7 @@ public class LoginApp extends Application {
             controller.setOnSelect(onSelect);
             controller.setOnBack(onBack);
             javafx.scene.Scene scene = new javafx.scene.Scene(root, 500, 500);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Select Address");
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -863,7 +911,9 @@ public class LoginApp extends Application {
                 });
             });
             controller.setOnTopUp(() -> showTopUpWalletPage(stage, jwtToken, () -> showPaymentPage(stage, restaurantId, restaurantName, logoBase64, address, basketItems, jwtToken, onBack)));
-            stage.setScene(new javafx.scene.Scene(root));
+            javafx.scene.Scene scene = new javafx.scene.Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setScene(scene);
             stage.centerOnScreen();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -881,7 +931,9 @@ public class LoginApp extends Application {
             controller.setJwtToken(jwtToken);
             controller.setOnBack(onBack);
             if (prefillAmount != null) controller.setPrefillAmount(prefillAmount);
-            stage.setScene(new javafx.scene.Scene(root));
+            javafx.scene.Scene scene = new javafx.scene.Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setScene(scene);
             stage.centerOnScreen();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -895,7 +947,9 @@ public class LoginApp extends Application {
             com.example.foodapp.controller.RestaurantOrdersController controller = loader.getController();
             controller.setJwtToken(this.jwtToken);
             controller.setOnBack(() -> showDashboard(stage, userRole));
-            stage.setScene(new javafx.scene.Scene(root, 1200, 700));
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1200, 700);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setScene(scene);
             stage.setTitle("Order Management");
             stage.centerOnScreen();
         } catch (Exception ex) {
@@ -910,7 +964,9 @@ public class LoginApp extends Application {
             com.example.foodapp.controller.RestaurantOrdersController controller = loader.getController();
             controller.setJwtToken(this.jwtToken);
             controller.setOnBack(() -> showDashboard(stage, userRole));
-            stage.setScene(new javafx.scene.Scene(root, 800, 600));
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 800, 600);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setScene(scene);
             stage.setTitle("Restaurant Order Management");
             stage.centerOnScreen();
         } catch (Exception ex) {
@@ -920,13 +976,20 @@ public class LoginApp extends Application {
     // TODO: Wire this to a button in the seller dashboard for quick testing
 
     public void showDeliveryManagementScreen(javafx.stage.Stage stage) {
-        // TODO: Implement delivery management screen
-        // For now, just show an alert
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-        alert.setTitle("Delivery Management");
-        alert.setHeaderText("Feature Not Yet Implemented");
-        alert.setContentText("Delivery management functionality will be implemented in a future update.");
-        alert.showAndWait();
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/DeliveryManagement.fxml"));
+            javafx.scene.Parent root = loader.load();
+            com.example.foodapp.controller.DeliveryManagementController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setOnBack(() -> showDashboard(stage, userRole));
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1000, 700);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setTitle("Delivery Management");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void showEditRestaurantScreen(Stage stage, com.example.foodapp.controller.MyRestaurantsController.RestaurantItem restaurantItem) {
@@ -938,6 +1001,7 @@ public class LoginApp extends Application {
             controller.setRestaurantItem(restaurantItem);
             controller.setOnBack(() -> showMyRestaurantsScreen(stage));
             Scene scene = new Scene(root, 600, 700);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Edit Restaurant - " + restaurantItem.name);
             stage.setScene(scene);
             stage.centerOnScreen();
@@ -954,11 +1018,67 @@ public class LoginApp extends Application {
             controller.setJwtToken(this.jwtToken);
             controller.setOnLogout(() -> showLoginScreen());
             javafx.scene.Scene scene = new javafx.scene.Scene(root, 1200, 800);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setTitle("Admin Dashboard");
             stage.setScene(scene);
             stage.centerOnScreen();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void showSalesAnalyticsScreen(Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SalesAnalytics.fxml"));
+            Parent root = loader.load();
+            com.example.foodapp.controller.SalesAnalyticsController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setSellerId(extractUserIdFromToken());
+            controller.setOnBack(() -> showDashboard(stage, userRole));
+            Scene scene = new Scene(root, 1200, 800);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setTitle("Sales Analytics");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showSearchScreen(Stage stage) {
+        showSearchScreen(stage, null);
+    }
+
+    public void showSearchScreen(Stage stage, String searchKeyword) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SearchScreen.fxml"));
+            Parent root = loader.load();
+            com.example.foodapp.controller.SearchController controller = loader.getController();
+            controller.setJwtToken(this.jwtToken);
+            controller.setApp(this);
+            controller.setOnBack(() -> showDashboard(stage, userRole));
+            if (searchKeyword != null) {
+                controller.setInitialSearch(searchKeyword);
+            }
+            Scene scene = new Scene(root, 1200, 800);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setTitle("Search Foods & Restaurants");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private int extractUserIdFromToken() {
+        try {
+            io.jsonwebtoken.Claims claims = com.example.foodapp.security.JwtUtil.parseToken(jwtToken);
+            int userId = Integer.parseInt(claims.getSubject());
+            System.out.println("Extracted User ID from token: " + userId);
+            return userId;
+        } catch (Exception e) {
+            System.out.println("Error extracting user ID from token: " + e.getMessage());
+            return 0;
         }
     }
 

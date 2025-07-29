@@ -190,6 +190,7 @@ public class RestaurantOrdersController {
     private List<OrderItem> parseOrdersFromJson(String json) {
         List<OrderItem> all = new ArrayList<>();
         try {
+            System.out.println("[DEBUG] Raw JSON response: " + json);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode arr = mapper.readTree(json);
             if (arr.isArray()) {
@@ -197,11 +198,29 @@ public class RestaurantOrdersController {
                     int id = node.path("id").asInt();
                     String address = node.path("delivery_address").asText("");
                     String status = node.path("status").asText("");
-                    int total = node.path("pay_price").asInt();
+                    
+                    // Check for different possible field names for the total amount
+                    int total = 0;
+                    if (node.has("pay_price")) {
+                        total = node.path("pay_price").asInt();
+                        System.out.println("[DEBUG] Order " + id + ": Using pay_price = " + total);
+                    } else if (node.has("payPrice")) {
+                        total = node.path("payPrice").asInt();
+                        System.out.println("[DEBUG] Order " + id + ": Using payPrice = " + total);
+                    } else if (node.has("total")) {
+                        total = node.path("total").asInt();
+                        System.out.println("[DEBUG] Order " + id + ": Using total = " + total);
+                    } else {
+                        System.out.println("[DEBUG] Order " + id + ": No amount field found! Available fields: " + node.fieldNames());
+                    }
+                    
                     all.add(new OrderItem(id, address, total, status));
                 }
             }
-        } catch (Exception ex) { ex.printStackTrace(); }
+        } catch (Exception ex) { 
+            System.err.println("[ERROR] Failed to parse orders JSON: " + ex.getMessage());
+            ex.printStackTrace(); 
+        }
         return all;
     }
 

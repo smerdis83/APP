@@ -15,6 +15,7 @@ public class SellerDashboardController {
     @FXML public Button restaurantListBtn;
     @FXML public Button orderManagementBtn;
     @FXML public Button simpleOrderViewerBtn;
+    @FXML public Button salesAnalyticsBtn;
     @FXML public VBox roleContent;
 
     private Consumer<Void> onProfile;
@@ -38,6 +39,9 @@ public class SellerDashboardController {
     private Runnable onSimpleOrderViewer;
     public void setOnSimpleOrderViewer(Runnable callback) { this.onSimpleOrderViewer = callback; }
 
+    private Runnable onSalesAnalytics;
+    public void setOnSalesAnalytics(Runnable callback) { this.onSalesAnalytics = callback; }
+
     @FXML
     public void initialize() {
         if (profileBtn != null) profileBtn.setOnAction(e -> { if (onProfile != null) onProfile.accept(null); });
@@ -47,6 +51,7 @@ public class SellerDashboardController {
         if (restaurantListBtn != null) restaurantListBtn.setOnAction(e -> { if (onRestaurantList != null) onRestaurantList.run(); });
         if (orderManagementBtn != null) orderManagementBtn.setOnAction(e -> { if (onOrderManagement != null) onOrderManagement.run(); });
         if (simpleOrderViewerBtn != null) simpleOrderViewerBtn.setOnAction(e -> { if (onSimpleOrderViewer != null) onSimpleOrderViewer.run(); });
+        if (salesAnalyticsBtn != null) salesAnalyticsBtn.setOnAction(e -> { if (onSalesAnalytics != null) onSalesAnalytics.run(); });
     }
 
     public void setWelcome(String name) { welcomeLabel.setText("Welcome, " + name + "!"); }

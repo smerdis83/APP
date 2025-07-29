@@ -45,6 +45,11 @@ public class MyRestaurantsController {
     }
 
     private void fetchMyRestaurants() {
+        // Save selection and scroll position
+        RestaurantItem selected = restaurantList.getSelectionModel().getSelectedItem();
+        Integer selectedId = selected != null ? selected.id : null;
+        int scrollIndex = restaurantList.getSelectionModel().getSelectedIndex();
+
         new Thread(() -> {
             try {
                 java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/mine");
@@ -57,7 +62,21 @@ public class MyRestaurantsController {
                 String json = sc.useDelimiter("\\A").next();
                 sc.close();
                 List<RestaurantItem> items = parseRestaurants(json);
-                Platform.runLater(() -> restaurants.setAll(items));
+                Platform.runLater(() -> {
+                    restaurants.setAll(items);
+                    // Restore selection and scroll
+                    if (selectedId != null) {
+                        for (int i = 0; i < items.size(); i++) {
+                            if (items.get(i).id == selectedId) {
+                                restaurantList.getSelectionModel().select(i);
+                                restaurantList.scrollTo(i);
+                                break;
+                            }
+                        }
+                    } else if (scrollIndex >= 0 && scrollIndex < items.size()) {
+                        restaurantList.scrollTo(scrollIndex);
+                    }
+                });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
                     restaurants.clear();
@@ -105,12 +124,14 @@ public class MyRestaurantsController {
         private final Button editBtn = new Button("Edit");
         private final Button deleteBtn = new Button("Delete");
         public RestaurantCell() {
-            imageView.setFitHeight(60); imageView.setFitWidth(60);
-            imageView.setStyle("-fx-effect: dropshadow(gaussian, #b0b0b0, 6, 0.2, 0, 2); -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #e0e0e0; -fx-border-width: 2; -fx-padding: 6;");
-            nameLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 0 0 0 12;");
+            imageView.setFitHeight(80);
+            imageView.setFitWidth(80);
+            imageView.setPreserveRatio(true);
+            nameLabel.setMaxWidth(Double.MAX_VALUE);
+            content.setMaxWidth(Double.MAX_VALUE);
+            editBtn.setMaxWidth(Double.MAX_VALUE);
+            deleteBtn.setMaxWidth(Double.MAX_VALUE);
             content.setStyle("-fx-alignment: CENTER_LEFT; -fx-padding: 8 0 8 0;");
-            editBtn.setStyle("-fx-background-color: #2196f3; -fx-text-fill: white; -fx-font-weight: bold;");
-            deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
             content.getChildren().addAll(imageView, nameLabel, editBtn, deleteBtn);
             editBtn.setOnAction(e -> handleEdit());
             deleteBtn.setOnAction(e -> handleDelete());

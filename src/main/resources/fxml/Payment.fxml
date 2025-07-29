@@ -6,6 +6,9 @@
         <Label fx:id="restaurantLabel" style="-fx-font-size: 22px; -fx-font-weight: bold;" />
         <Label fx:id="addressLabel" style="-fx-font-size: 16px;" />
         <ListView fx:id="itemList" prefWidth="400.0" prefHeight="180.0" />
+        <Label fx:id="taxFeeLabel" style="-fx-font-size: 16px; -fx-text-fill: #C2185B;" />
+        <Label fx:id="additionalFeeLabel" style="-fx-font-size: 16px; -fx-text-fill: #C2185B;" />
+        <com.example.foodapp.controller.CouponValidationController fx:id="couponValidationController" />
         <Label fx:id="totalLabel" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
         <VBox fx:id="paymentOptionsBox" spacing="10" alignment="CENTER">
             <children>

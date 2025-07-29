@@ -29,10 +29,9 @@ public class NavigationManager {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/BuyerDashboard.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root, 1200, 800);
-            // scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             primaryStage.setScene(scene);
             primaryStage.setTitle("FoodApp - Buyer Dashboard");
-            scene.getRoot().setStyle("-fx-background-color: lightgreen;");
             System.out.println("[NavigationManager] BuyerDashboard scene set successfully");
         } catch (IOException e) {
             System.err.println("[NavigationManager] Failed to load BuyerDashboard.fxml: " + e.getMessage());
@@ -48,7 +47,7 @@ public class NavigationManager {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SellerDashboard.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root, 1200, 800);
-            // scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             primaryStage.setScene(scene);
             primaryStage.setTitle("FoodApp - Seller Dashboard");
         } catch (IOException e) {
@@ -65,7 +64,7 @@ public class NavigationManager {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/CourierDashboard.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root, 1200, 800);
-            // scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             primaryStage.setScene(scene);
             primaryStage.setTitle("FoodApp - Courier Dashboard");
         } catch (IOException e) {

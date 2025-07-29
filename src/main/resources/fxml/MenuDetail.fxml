@@ -17,6 +17,7 @@
         <HBox spacing="10" alignment="CENTER">
             <children>
                 <Button fx:id="addFoodBtn" text="Add Food" />
+                <Button fx:id="cancelBtn" text="Cancel" />
                 <Button fx:id="backBtn" text="Back" />
             </children>
         </HBox>

@@ -61,4 +61,9 @@ public class LoginController {
     public void clearError() {
         messageLabel.setText("");
     }
+
+    public void showSuccess(String msg) {
+        messageLabel.setText(msg);
+        messageLabel.setStyle("-fx-text-fill: green;");
+    }
 } 

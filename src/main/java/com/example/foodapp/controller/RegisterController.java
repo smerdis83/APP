@@ -39,7 +39,18 @@ public class RegisterController {
             return;
         }
         messageLabel.setText("");
-        if (onRegister != null) onRegister.accept(new RegisterData(name, phone, password, role));
+        if (onRegister != null) {
+            try {
+                onRegister.accept(new RegisterData(name, phone, password, role));
+                // Go back to login and show green message
+                if (onBack != null) {
+                    onBack.run();
+                }
+                // The login controller should be set up to show the green message after navigation
+            } catch (Exception e) {
+                showError("Registration failed: " + e.getMessage());
+            }
+        }
     }
 
     public void showError(String msg) {

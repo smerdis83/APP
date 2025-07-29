@@ -15,6 +15,7 @@ import com.example.foodapp.handler.VendorItemHandler;
 import com.example.foodapp.handler.FavoriteHandler;
 import com.example.foodapp.handler.RatingHandler;
 import com.example.foodapp.handler.AddressHandler;
+import com.example.foodapp.handler.AnalyticsHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.sql.Connection;
@@ -77,6 +78,10 @@ public class App {
 
         AddressHandler addressHandler = new AddressHandler();
         server.createContext("/addresses", addressHandler);
+
+        // Analytics endpoints
+        AnalyticsHandler analyticsHandler = new AnalyticsHandler();
+        server.createContext("/analytics", analyticsHandler);
 
         // 3) Use a thread pool to handle requests
         server.setExecutor(Executors.newFixedThreadPool(8));

@@ -112,7 +112,22 @@ public class RatingDao {
     }
 
     public List<Rating> getRatingsByOrder(int orderId) throws SQLException {
-        String sql = "SELECT * FROM ratings WHERE order_id = ?";
+        String sql = "SELECT * FROM ratings WHERE order_id = ? ORDER BY created_at DESC";
+        List<Rating> ratings = new ArrayList<>();
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ratings.add(mapRowToRating(rs));
+                }
+            }
+        }
+        return ratings;
+    }
+
+    public List<Rating> getOrderLevelRatingsByOrder(int orderId) throws SQLException {
+        String sql = "SELECT * FROM ratings WHERE order_id = ? AND item_id IS NULL ORDER BY created_at DESC";
         List<Rating> ratings = new ArrayList<>();
         try (Connection conn = JdbcUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

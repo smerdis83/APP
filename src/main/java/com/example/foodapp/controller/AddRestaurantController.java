@@ -22,6 +22,8 @@ public class AddRestaurantController {
     @FXML private TextField additionalFeeField;
     @FXML private ImageView logoImageView;
     @FXML private Button chooseLogoBtn;
+    @FXML private TextArea descriptionField;
+    @FXML private TextField workingHoursField;
 
     private String jwtToken;
     private Runnable onBack;
@@ -64,6 +66,8 @@ public class AddRestaurantController {
         String phone = phoneField.getText().trim();
         String taxFeeStr = taxFeeField.getText().trim();
         String additionalFeeStr = additionalFeeField.getText().trim();
+        String description = descriptionField.getText().trim();
+        String workingHours = workingHoursField.getText().trim();
         if (name.isEmpty() || address.isEmpty() || phone.isEmpty()) {
             messageLabel.setText("Name, address, and phone are required.");
             return;
@@ -77,6 +81,12 @@ public class AddRestaurantController {
         }
         if (!additionalFeeStr.isEmpty()) {
             try { Integer.parseInt(additionalFeeStr); json.append(String.format(",\"additional_fee\":%s", additionalFeeStr)); } catch (Exception ignore) {}
+        }
+        if (!description.isEmpty()) {
+            json.append(String.format(",\"description\":\"%s\"", description.replace("\"", "\\\"")));
+        }
+        if (!workingHours.isEmpty()) {
+            json.append(String.format(",\"working_hours\":\"%s\"", workingHours.replace("\"", "\\\"")));
         }
         json.append("}");
         new Thread(() -> {

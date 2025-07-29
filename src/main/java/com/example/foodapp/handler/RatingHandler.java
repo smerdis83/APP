@@ -194,6 +194,44 @@ public class RatingHandler implements HttpHandler {
                 }
                 return;
             }
+            // --- GET /ratings/restaurant/{restaurantId} ---
+            else if (method.equalsIgnoreCase("GET") && path.matches("/ratings/restaurant/\\d+")) {
+                int restaurantId = Integer.parseInt(path.replaceAll(".*?/ratings/restaurant/(\\d+)", "$1"));
+                OrderDao orderDao = new OrderDao();
+                RatingDao ratingDao = new RatingDao();
+                try {
+                    List<com.example.foodapp.model.entity.Order> orders = orderDao.getOrdersByVendor(restaurantId);
+                    List<com.example.foodapp.model.entity.Rating> allRatings = new java.util.ArrayList<>();
+                    for (com.example.foodapp.model.entity.Order order : orders) {
+                        // Only get order-level ratings (item_id is NULL) to avoid duplicates
+                        List<com.example.foodapp.model.entity.Rating> ratings = ratingDao.getOrderLevelRatingsByOrder(order.getId());
+                        allRatings.addAll(ratings);
+                    }
+                    double avg = allRatings.isEmpty() ? 0 : allRatings.stream().mapToInt(com.example.foodapp.model.entity.Rating::getRating).average().orElse(0);
+                    java.util.Map<String, Object> resp = new java.util.HashMap<>();
+                    resp.put("avg_rating", avg);
+                    resp.put("comments", allRatings);
+                    sendJson(exchange, 200, resp);
+                } catch (Exception e) {
+                    sendJson(exchange, 500, java.util.Map.of("error", "Database error: " + e.getMessage()));
+                }
+                return;
+            }
+            // --- GET /ratings/order/{orderId} ---
+            else if (method.equalsIgnoreCase("GET") && path.matches("/ratings/order/\\d+")) {
+                int orderId = Integer.parseInt(path.replaceAll(".*?/ratings/order/(\\d+)", "$1"));
+                try {
+                    Rating rating = ratingDao.getRatingByOrderAndUser(orderId, userId);
+                    if (rating == null) {
+                        sendJson(exchange, 404, Map.of("error", "No rating found"));
+                    } else {
+                        sendJson(exchange, 200, rating);
+                    }
+                } catch (Exception e) {
+                    sendJson(exchange, 500, Map.of("error", "Database error: " + e.getMessage()));
+                }
+                return;
+            }
             else {
                 sendJson(exchange, 404, Map.of("error", "Not Found"));
             }

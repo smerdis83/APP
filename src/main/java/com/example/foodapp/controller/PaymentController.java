@@ -9,6 +9,9 @@ import javafx.collections.ObservableList;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import com.example.foodapp.controller.CouponValidationController;
+import com.example.foodapp.model.entity.Coupon;
+import com.example.foodapp.util.SessionManager;
 
 public class PaymentController {
     @FXML private Label restaurantLabel;
@@ -30,6 +33,11 @@ public class PaymentController {
     @FXML private Label walletErrorLabel;
     @FXML private Button topUpWalletBtn;
     @FXML private Button backToOrderBtn;
+    @FXML private Label taxFeeLabel;
+    @FXML private Label additionalFeeLabel;
+    private int taxFee = 0;
+    private int additionalFee = 0;
+    private int taxAmount = 0;
 
     private String jwtToken;
     private Runnable onBack;
@@ -44,6 +52,9 @@ public class PaymentController {
     private com.example.foodapp.LoginApp app;
     private int lackingAmount = 0;
     private String logoBase64;
+    @FXML private CouponValidationController couponValidationController;
+    private int couponDiscount = 0;
+    private Integer couponId = null;
 
     public void setJwtToken(String token) { this.jwtToken = token; }
     public void setOnBack(Runnable r) { this.onBack = r; }
@@ -56,18 +67,32 @@ public class PaymentController {
         this.address = address;
         this.items = items;
         this.total = total;
-        restaurantLabel.setText("Restaurant: " + restaurantName);
-        addressLabel.setText("Address: " + address);
-        observableItems.setAll(items);
+        
+        restaurantLabel.setText(restaurantName);
+        addressLabel.setText(address);
+        observableItems.clear();
+        observableItems.addAll(items);
         itemList.setItems(observableItems);
-        itemList.setCellFactory(list -> new ListCell<>() {
+        
+        // Set up custom cell factory for items
+        itemList.setCellFactory(param -> new ListCell<Item>() {
             @Override protected void updateItem(Item item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.name + " x" + item.quantity + " (" + item.price + ")");
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.toString());
+                }
             }
         });
-        totalLabel.setText("Total: " + total);
-        showPaymentOptions();
+        
+        fetchRestaurantFeesAndUpdateLabels();
+        
+        // Update coupon validator with the actual order total
+        if (couponValidationController != null) {
+            System.out.println("Setting order total for coupon validator: " + total);
+            couponValidationController.setOrderTotal(total);
+        }
     }
     public void setLogoBase64(String logoBase64) { this.logoBase64 = logoBase64; }
 
@@ -131,6 +156,28 @@ public class PaymentController {
         topUpWalletBtn.setVisible(false); topUpWalletBtn.setManaged(false);
         showPaymentOptions();
         backToOrderBtn.setOnAction(e -> { if (onBack != null) onBack.run(); });
+        // Coupon validation integration
+        Platform.runLater(() -> {
+            if (couponValidationController != null) {
+                couponValidationController.setOrderTotal(0);
+                couponValidationController.setUserId(SessionManager.getInstance().getCurrentUserId());
+                couponValidationController.setCallback(new CouponValidationController.CouponValidationCallback() {
+                    @Override
+                    public void onCouponApplied(Coupon coupon, int discount) {
+                        couponDiscount = discount;
+                        couponId = coupon.getId();
+                        updateTotalLabel();
+                    }
+                    @Override
+                    public void onCouponRemoved() {
+                        couponDiscount = 0;
+                        couponId = null;
+                        updateTotalLabel();
+                    }
+                });
+            }
+        });
+        updateTotalLabel();
     }
 
     private void showPaymentOptions() {
@@ -179,8 +226,11 @@ public class PaymentController {
             first = false;
         }
         itemsJson.append("]");
-        String orderJson = String.format("{\"delivery_address\":\"%s\",\"vendor_id\":%d,\"coupon_id\":0,\"items\":%s,\"use_wallet\":%s}",
-                address.replace("\"", "'"), restaurantId, itemsJson, useWallet ? "true" : "false");
+        String orderJson = String.format("{\"delivery_address\":\"%s\",\"vendor_id\":%d,\"coupon_id\":%s,\"items\":%s,\"use_wallet\":%s,\"tax_fee\":%d,\"additional_fee\":%d,\"courier_fee\":%d}",
+                address.replace("\"", "'"), restaurantId, 
+                couponId != null ? String.valueOf(couponId) : "null", 
+                itemsJson, useWallet ? "true" : "false",
+                taxFee, additionalFee, 0); // courier_fee is 0 for now
         new Thread(() -> {
             try {
                 java.net.URL url = new java.net.URL("http://localhost:8000/orders");
@@ -293,6 +343,87 @@ public class PaymentController {
                 Platform.runLater(() -> messageLabel.setText("Order error: " + ex.getMessage()));
             }
         }).start();
+    }
+
+    private void fetchRestaurantFeesAndUpdateLabels() {
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                if (jwtToken != null) conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    java.util.Scanner sc = new java.util.Scanner(conn.getInputStream(), "UTF-8");
+                    String json = sc.useDelimiter("\\A").next();
+                    sc.close();
+                    int tax = extractIntFromJson(json, "tax_fee");
+                    int add = extractIntFromJson(json, "additional_fee");
+                    Platform.runLater(() -> {
+                        taxFee = tax;
+                        additionalFee = add;
+                        taxAmount = (int) Math.round(total * (taxFee / 100.0));
+                        int totalWithFees = total + taxAmount + additionalFee;
+                        
+                        taxFeeLabel.setText("Tax Fee: " + taxAmount + " (" + taxFee + "%)");
+                        additionalFeeLabel.setText("Additional Fee: " + additionalFee);
+                        totalLabel.setText("Total: " + totalWithFees);
+                        
+                        // Update coupon validator with total including tax and fees
+                        if (couponValidationController != null) {
+                            System.out.println("Setting total with fees for coupon validator: " + totalWithFees);
+                            couponValidationController.setOrderTotal(totalWithFees);
+                        }
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        taxFeeLabel.setText("");
+                        additionalFeeLabel.setText("");
+                        totalLabel.setText("Total: " + total);
+                        
+                        // Update coupon validator with base total
+                        if (couponValidationController != null) {
+                            couponValidationController.setOrderTotal(total);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    taxFeeLabel.setText("");
+                    additionalFeeLabel.setText("");
+                    totalLabel.setText("Total: " + total);
+                    
+                    // Update coupon validator with base total
+                    if (couponValidationController != null) {
+                        couponValidationController.setOrderTotal(total);
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private int extractIntFromJson(String json, String key) {
+        String searchKey = "\"" + key + "\":";
+        int idx = json.indexOf(searchKey);
+        if (idx == -1) return 0;
+        idx += searchKey.length();
+        StringBuilder num = new StringBuilder();
+        while (idx < json.length() && (Character.isDigit(json.charAt(idx)) || json.charAt(idx) == '-')) {
+            num.append(json.charAt(idx));
+            idx++;
+        }
+        try { return Integer.parseInt(num.toString()); } catch (Exception e) { return 0; }
+    }
+
+    private void updateTotalLabel() {
+        int totalWithFees = total + taxAmount + additionalFee;
+        int displayTotal = totalWithFees - couponDiscount;
+        if (displayTotal < 0) displayTotal = 0;
+        if (couponDiscount > 0) {
+            totalLabel.setText("Total: " + totalWithFees + " - Coupon: " + couponDiscount + " = " + displayTotal);
+        } else {
+            totalLabel.setText("Total: " + totalWithFees);
+        }
     }
 
     public static class Item {

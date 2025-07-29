@@ -23,11 +23,14 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import com.example.foodapp.handler.CouponHandler;
+import java.util.ArrayList;
 
 public class OrderHandler implements HttpHandler {
     private final ObjectMapper mapper;
     private final OrderDao orderDao = new OrderDao();
     private final FoodItemDao foodItemDao = new FoodItemDao();
+    private final CouponHandler couponHandler = new CouponHandler();
 
     public OrderHandler() {
         this.mapper = new ObjectMapper();
@@ -83,6 +86,54 @@ public class OrderHandler implements HttpHandler {
                     toReduce.put(oi.getItem_id(), oi.getQuantity());
                     rawPrice += fi.getPrice() * oi.getQuantity();
                 }
+                // Calculate total price including tax and fees
+                int taxAmount = (int) Math.round(rawPrice * (order.getTaxFee() / 100.0));
+                
+                // Get restaurant's actual additional fee from the first food item
+                int additionalFee = 0;
+                if (!order.getItems().isEmpty()) {
+                    try {
+                        FoodItem firstItem = foodItemDao.getFoodItemById(order.getItems().get(0).getItem_id());
+                        if (firstItem != null) {
+                            com.example.foodapp.dao.RestaurantDao restaurantDao = new com.example.foodapp.dao.RestaurantDao();
+                            com.example.foodapp.model.entity.Restaurant restaurant = restaurantDao.findById(firstItem.getVendorId());
+                            if (restaurant != null) {
+                                additionalFee = restaurant.getAdditionalFee();
+                                System.out.println("[DEBUG] Order creation: Restaurant ID=" + restaurant.getId() + ", Additional Fee=" + additionalFee);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[ERROR] Failed to get restaurant additional fee: " + e.getMessage());
+                        additionalFee = order.getAdditionalFee(); // fallback to order request
+                    }
+                } else {
+                    additionalFee = order.getAdditionalFee(); // fallback to order request
+                }
+                
+                int courierFee = order.getCourierFee();
+                int totalPrice = rawPrice + taxAmount + additionalFee + courierFee;
+                
+                // Coupon discount logic
+                int couponDiscount = 0;
+                if (order.getCouponId() != null && order.getCouponId() > 0) {
+                    try {
+                        com.example.foodapp.model.entity.Coupon coupon = couponHandler.getCouponById(order.getCouponId());
+                        if (coupon == null) {
+                            sendJson(exchange, 400, Map.of("error", "Invalid coupon_id"));
+                            return;
+                        }
+                        // Validate coupon for this specific user and total order price
+                        com.example.foodapp.model.entity.Coupon validCoupon = couponHandler.validateCouponForUser(coupon.getCouponCode(), totalPrice, userId);
+                        if (validCoupon == null) {
+                            sendJson(exchange, 400, Map.of("error", "Coupon not valid for this order or user"));
+                            return;
+                        }
+                        couponDiscount = couponHandler.calculateDiscount(validCoupon, totalPrice);
+                    } catch (Exception e) {
+                        sendJson(exchange, 500, Map.of("error", "Failed to validate coupon: " + e.getMessage()));
+                        return;
+                    }
+                }
                 // All items have enough stock, reduce supply
                 for (Map.Entry<Integer, Integer> entry : toReduce.entrySet()) {
                     try {
@@ -95,13 +146,34 @@ public class OrderHandler implements HttpHandler {
                     }
                 }
                 order.setRawPrice(rawPrice);
-                order.setTaxFee(0); // You can add logic here
-                order.setAdditionalFee(0); // You can add logic here
-                order.setCourierFee(0); // You can add logic here
-                order.setPayPrice(rawPrice); // For now, just rawPrice
+                order.setTaxFee(taxAmount);
+                order.setAdditionalFee(additionalFee);
+                order.setCourierFee(courierFee);
+                order.setPayPrice(Math.max(0, totalPrice - couponDiscount));
+                
+                System.out.println("[DEBUG] Order price breakdown:");
+                System.out.println("[DEBUG]   Raw Price: " + rawPrice);
+                System.out.println("[DEBUG]   Tax Amount: " + taxAmount);
+                System.out.println("[DEBUG]   Additional Fee: " + additionalFee);
+                System.out.println("[DEBUG]   Courier Fee: " + courierFee);
+                System.out.println("[DEBUG]   Total Price: " + totalPrice);
+                System.out.println("[DEBUG]   Coupon Discount: " + couponDiscount);
+                System.out.println("[DEBUG]   Final Pay Price: " + order.getPayPrice());
+                
                 order.setStatus("submitted");
                 orderDao.addOrder(order);
                 orderDao.insertOrderStatusHistory(order.getId(), "submitted", "buyer");
+                
+                // Record coupon usage after successful order creation
+                if (order.getCouponId() != null && order.getCouponId() > 0) {
+                    try {
+                        couponHandler.recordCouponUsage(order.getCouponId(), userId);
+                    } catch (Exception e) {
+                        // Log the error but don't fail the order
+                        System.err.println("Failed to record coupon usage: " + e.getMessage());
+                    }
+                }
+                
                 sendJson(exchange, 200, order);
                 return;
             } else if (method.equalsIgnoreCase("GET") && path.matches("/orders/\\d+")) {
@@ -152,7 +224,30 @@ public class OrderHandler implements HttpHandler {
                 // Get order history (buyer only)
                 if (!"BUYER".equals(role)) { sendJson(exchange, 403, Map.of("error", "Forbidden: must be a buyer")); return; }
                 List<Order> orders = orderDao.getOrdersByCustomer(userId);
-                sendJson(exchange, 200, orders);
+                
+                // Add restaurant names to each order
+                List<Map<String, Object>> ordersWithRestaurantNames = new ArrayList<>();
+                com.example.foodapp.dao.RestaurantDao restaurantDao = new com.example.foodapp.dao.RestaurantDao();
+                
+                for (Order order : orders) {
+                    Map<String, Object> orderMap = mapper.convertValue(order, Map.class);
+                    
+                    // Fetch restaurant name
+                    try {
+                        com.example.foodapp.model.entity.Restaurant restaurant = restaurantDao.findById(order.getVendorId());
+                        if (restaurant != null) {
+                            orderMap.put("vendor_name", restaurant.getName());
+                        } else {
+                            orderMap.put("vendor_name", "Unknown Restaurant");
+                        }
+                    } catch (Exception e) {
+                        orderMap.put("vendor_name", "Unknown Restaurant");
+                    }
+                    
+                    ordersWithRestaurantNames.add(orderMap);
+                }
+                
+                sendJson(exchange, 200, ordersWithRestaurantNames);
                 return;
             } else {
                 sendJson(exchange, 404, Map.of("error", "Not Found"));

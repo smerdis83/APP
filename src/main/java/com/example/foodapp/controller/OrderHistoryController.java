@@ -27,6 +27,7 @@ public class OrderHistoryController {
     private ObservableList<OrderSummary> orders = FXCollections.observableArrayList();
     private String jwtToken;
     private boolean activeOnly = false;
+    private java.util.Map<String, Boolean> commentedOrders = new java.util.HashMap<>();
 
     public void setJwtToken(String token) { this.jwtToken = token; }
     public void setOnBack(Runnable callback) { this.onBack = callback; }
@@ -90,6 +91,36 @@ public class OrderHistoryController {
                         rateBtn.setOnAction(e -> {
                             if (onRateOrder != null) onRateOrder.rateOrder(order);
                         });
+                        // Check if already commented
+                        Boolean commented = commentedOrders.get(order.id);
+                        if (commented == null) {
+                            // Fetch from backend
+                            rateBtn.setDisable(true);
+                            rateBtn.setText("Checking...");
+                            new Thread(() -> {
+                                try {
+                                    java.net.URL url = new java.net.URL("http://localhost:8000/ratings/order/" + order.id);
+                                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                                    conn.setRequestMethod("GET");
+                                    if (jwtToken != null) conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                                    int code = conn.getResponseCode();
+                                    boolean isCommented = (code == 200);
+                                    Platform.runLater(() -> {
+                                        commentedOrders.put(order.id, isCommented);
+                                        orderList.refresh();
+                                    });
+                                } catch (Exception ex) {
+                                    Platform.runLater(() -> {
+                                        commentedOrders.put(order.id, false);
+                                        orderList.refresh();
+                                    });
+                                }
+                            }).start();
+                        } else if (commented) {
+                            rateBtn.setDisable(true);
+                            rateBtn.setText("Commented!");
+                            rateBtn.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                        }
                         HBox hbox = new HBox(10, infoLabel, rateBtn);
                         hbox.setFillHeight(true);
                         setGraphic(hbox);

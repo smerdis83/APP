@@ -16,6 +16,7 @@
         <Button fx:id="restaurantListBtn" text="Restaurant List" />
         <Button fx:id="orderManagementBtn" text="Order Management" />
         <Button fx:id="simpleOrderViewerBtn" text="Simple Order Viewer" />
+        <Button fx:id="salesAnalyticsBtn" text="Sales Analytics" style="-fx-background-color: #C2185B; -fx-text-fill: white; -fx-font-weight: bold;" />
         <VBox fx:id="roleContent" spacing="10" />
     </children>
 </VBox> 

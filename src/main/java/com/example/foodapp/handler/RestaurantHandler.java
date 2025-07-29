@@ -131,10 +131,10 @@ public class RestaurantHandler implements HttpHandler {
                     return;
                 }
 
-                // Only SELLERs can view restaurant details
+                // Allow SELLER, BUYER, and ADMIN to view restaurant details
                 String role = claims.get("role", String.class);
-                if (!"SELLER".equals(role)) {
-                    sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller"));
+                if (!"SELLER".equals(role) && !"BUYER".equals(role) && !"ADMIN".equals(role)) {
+                    sendJson(exchange, 403, new ErrorResponse("Forbidden: must be a seller, buyer, or admin"));
                     return;
                 }
 
@@ -151,8 +151,8 @@ public class RestaurantHandler implements HttpHandler {
                     return;
                 }
 
-                // Check ownership
-                if (restaurant.getOwnerId() != userId) {
+                // Only check ownership for SELLERs
+                if ("SELLER".equals(role) && restaurant.getOwnerId() != userId) {
                     sendJson(exchange, 403, new ErrorResponse("Forbidden: you do not own this restaurant"));
                     return;
                 }
@@ -546,6 +546,27 @@ public class RestaurantHandler implements HttpHandler {
                     sendJson(exchange, 409, new ErrorResponse("Order must be paid before it can be accepted"));
                     return;
                 }
+                // Add order pay price to seller's wallet when accepted
+                if ("accepted".equals(newStatus)) {
+                    try {
+                        com.example.foodapp.dao.UserDao userDao = new com.example.foodapp.dao.UserDao();
+                        int currentBalance = userDao.getWalletBalance(userId);
+                        int customerPaidAmount = order.getPayPrice();
+                        
+                        System.out.println("[DEBUG] Seller accepting order: Order ID=" + orderId + ", Seller ID=" + userId);
+                        System.out.println("[DEBUG] Customer paid amount: " + customerPaidAmount);
+                        System.out.println("[DEBUG] Seller wallet: Before=" + currentBalance + ", After=" + (currentBalance + customerPaidAmount));
+                        
+                        userDao.updateWalletBalance(userId, currentBalance + customerPaidAmount);
+                        
+                        System.out.println("[DEBUG] Seller wallet updated successfully!");
+                    } catch (Exception e) {
+                        System.err.println("[ERROR] Failed to update seller wallet: " + e.getMessage());
+                        e.printStackTrace();
+                        sendJson(exchange, 500, new ErrorResponse("Failed to update seller wallet: " + e.getMessage()));
+                        return;
+                    }
+                }
                 // Only allow serving if order is accepted
                 if ("served".equals(newStatus) && !"accepted".equals(order.getStatus())) {
                     sendJson(exchange, 409, new ErrorResponse("Order must be accepted before it can be served"));
@@ -607,6 +628,8 @@ public class RestaurantHandler implements HttpHandler {
                 if (updateReq.containsKey("logoBase64")) restaurant.setLogoBase64((String) updateReq.get("logoBase64"));
                 if (updateReq.containsKey("tax_fee")) restaurant.setTaxFee((Integer) updateReq.get("tax_fee"));
                 if (updateReq.containsKey("additional_fee")) restaurant.setAdditionalFee((Integer) updateReq.get("additional_fee"));
+                if (updateReq.containsKey("description")) restaurant.setDescription(updateReq.get("description") == null ? "" : ((String) updateReq.get("description")).trim());
+                if (updateReq.containsKey("working_hours")) restaurant.setWorkingHours(updateReq.get("working_hours") == null ? "" : ((String) updateReq.get("working_hours")).trim());
                 try { restaurantDao.updateRestaurant(restaurant); } catch (Exception e) {
                     if (e.getMessage() != null && e.getMessage().toLowerCase().contains("duplicate")) {
                         sendJson(exchange, 409, new ErrorResponse("Duplicate restaurant info"));

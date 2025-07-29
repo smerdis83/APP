@@ -17,6 +17,7 @@ public class BuyerDashboardController {
     @FXML public Button orderHistoryBtn;
     @FXML public Button favoritesBtn;
     @FXML public Button restaurantListBtn;
+    @FXML public Button searchBtn;
     @FXML public VBox roleContent;
     @FXML private Button topUpWalletBtn;
     @FXML public Button activeOrdersBtn;
@@ -38,6 +39,9 @@ public class BuyerDashboardController {
     private Runnable onRestaurantList;
     public void setOnRestaurantList(Runnable callback) { this.onRestaurantList = callback; }
 
+    private Runnable onSearch;
+    public void setOnSearch(Runnable callback) { this.onSearch = callback; }
+
     private Runnable onActiveOrders;
     public void setOnActiveOrders(Runnable callback) { this.onActiveOrders = callback; }
 
@@ -51,6 +55,7 @@ public class BuyerDashboardController {
         if (orderHistoryBtn != null) orderHistoryBtn.setOnAction(e -> { if (onOrderHistory != null) onOrderHistory.run(); });
         if (favoritesBtn != null) favoritesBtn.setOnAction(e -> { if (onFavorites != null) onFavorites.run(); });
         if (restaurantListBtn != null) restaurantListBtn.setOnAction(e -> { if (onRestaurantList != null) onRestaurantList.run(); });
+        if (searchBtn != null) searchBtn.setOnAction(e -> { if (onSearch != null) onSearch.run(); });
         if (topUpWalletBtn != null) {
             topUpWalletBtn.setOnAction(e -> {
                 Stage stage = (Stage) topUpWalletBtn.getScene().getWindow();
