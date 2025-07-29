@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.function.BiConsumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.example.foodapp.model.OrderSummary;
+import com.example.foodapp.model.entity.OrderSummary;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -133,8 +133,35 @@ public class LoginApp extends Application {
                 if (code == 200) {
                     javafx.application.Platform.runLater(() -> showLoginScreenWithMessage("Registration successful! Please log in."));
                 } else {
-                    String msg = "Registration failed (" + code + "):\n" + resp;
-                    javafx.application.Platform.runLater(() -> controller.showError(msg));
+                    // Parse the error message from JSON response
+                    String errorMsg = "Registration failed";
+                    try {
+                        if (resp.contains("\"error\"")) {
+                            // Find the error field in JSON
+                            int errorStart = resp.indexOf("\"error\"");
+                            if (errorStart != -1) {
+                                // Find the colon after "error"
+                                int colonPos = resp.indexOf(":", errorStart);
+                                if (colonPos != -1) {
+                                    // Find the opening quote after colon
+                                    int quoteStart = resp.indexOf("\"", colonPos);
+                                    if (quoteStart != -1) {
+                                        // Find the closing quote
+                                        int quoteEnd = resp.indexOf("\"", quoteStart + 1);
+                                        if (quoteEnd > quoteStart) {
+                                            errorMsg = resp.substring(quoteStart + 1, quoteEnd);
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            errorMsg = "Registration failed (" + code + "): " + resp;
+                        }
+                    } catch (Exception e) {
+                        errorMsg = "Registration failed (" + code + "): " + resp;
+                    }
+                    final String finalErrorMsg = errorMsg;
+                    javafx.application.Platform.runLater(() -> controller.showError(finalErrorMsg));
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -903,7 +930,11 @@ public class LoginApp extends Application {
             controller.setApp(this);
             controller.setJwtToken(jwtToken);
             controller.setOrderDetails(restaurantName, restaurantId, address,
-                basketItems.stream().map(b -> new com.example.foodapp.controller.PaymentController.Item(b.food.id, b.food.name, b.quantity, b.food.price)).toList(),
+                basketItems.stream().map(b -> {
+                    // Use the same price logic as in the basket calculation
+                    int unitPrice = (b.food.discountPrice != null) ? b.food.discountPrice : b.food.price;
+                    return new com.example.foodapp.controller.PaymentController.Item(b.food.id, b.food.name, b.quantity, unitPrice);
+                }).toList(),
                 total
             );
             controller.setOnBack(() -> onBack.run());

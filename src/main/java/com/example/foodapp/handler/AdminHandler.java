@@ -12,7 +12,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import io.jsonwebtoken.Claims;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -111,6 +113,43 @@ public class AdminHandler implements HttpHandler {
                     sendJson(exchange, 200, Map.of("message", "Order deleted"));
                 } catch (Exception e) {
                     System.out.println("[ADMIN HANDLER] Exception deleting order: " + e.getMessage());
+                    sendJson(exchange, 500, Map.of("error", "Database error: " + e.getMessage()));
+                }
+                return;
+            } else if (method.equalsIgnoreCase("PATCH") && path.matches("/admin/users/\\d+/status")) {
+                // PATCH /admin/users/{id}/status - Update user status (approve/reject)
+                int userId = Integer.parseInt(path.replaceAll(".*?/admin/users/(\\d+)/status", "$1"));
+                try {
+                    User user = userDao.findById(userId);
+                    if (user == null) {
+                        sendJson(exchange, 404, Map.of("error", "User not found"));
+                        return;
+                    }
+                    
+                    // Read request body
+                    StringBuilder sb = new StringBuilder();
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line);
+                        }
+                    }
+                    String json = sb.toString();
+                    Map<String, Object> req = mapper.readValue(json, Map.class);
+                    
+                    String status = (String) req.get("status");
+                    if ("approved".equals(status)) {
+                        user.setEnabled(true);
+                        userDao.updateUser(user);
+                        sendJson(exchange, 200, Map.of("message", "User approved successfully"));
+                    } else if ("rejected".equals(status)) {
+                        user.setEnabled(false);
+                        userDao.updateUser(user);
+                        sendJson(exchange, 200, Map.of("message", "User rejected successfully"));
+                    } else {
+                        sendJson(exchange, 400, Map.of("error", "Invalid status. Use 'approved' or 'rejected'"));
+                    }
+                } catch (Exception e) {
                     sendJson(exchange, 500, Map.of("error", "Database error: " + e.getMessage()));
                 }
                 return;

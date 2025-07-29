@@ -42,11 +42,8 @@ public class RegisterController {
         if (onRegister != null) {
             try {
                 onRegister.accept(new RegisterData(name, phone, password, role));
-                // Go back to login and show green message
-                if (onBack != null) {
-                    onBack.run();
-                }
-                // The login controller should be set up to show the green message after navigation
+                // Only navigate to login on successful registration
+                // The navigation will be handled by the LoginApp.handleRegister method
             } catch (Exception e) {
                 showError("Registration failed: " + e.getMessage());
             }
@@ -55,9 +52,11 @@ public class RegisterController {
 
     public void showError(String msg) {
         messageLabel.setText(msg);
+        messageLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
     }
     public void clearError() {
         messageLabel.setText("");
+        messageLabel.setStyle("");
     }
 
     public static class RegisterData {

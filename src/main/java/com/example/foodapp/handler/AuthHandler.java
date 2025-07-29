@@ -1,8 +1,8 @@
 package com.example.foodapp.handler;
 
-import com.example.foodapp.model.dto.AuthResponse;
-import com.example.foodapp.model.dto.LoginRequest;
-import com.example.foodapp.model.dto.RegisterRequest;
+import com.example.foodapp.model.entity.AuthResponse;
+import com.example.foodapp.model.entity.LoginRequest;
+import com.example.foodapp.model.entity.RegisterRequest;
 import com.example.foodapp.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;

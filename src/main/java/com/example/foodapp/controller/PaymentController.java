@@ -48,6 +48,7 @@ public class PaymentController {
     private String address;
     private List<Item> items = new ArrayList<>();
     private int total = 0;
+    private int totalWithFees = 0; // Add this to track total with fees
     private ObservableList<Item> observableItems = FXCollections.observableArrayList();
     private com.example.foodapp.LoginApp app;
     private int lackingAmount = 0;
@@ -67,6 +68,7 @@ public class PaymentController {
         this.address = address;
         this.items = items;
         this.total = total;
+        this.totalWithFees = total; // Initialize with base total, will be updated when fees are fetched
 
         restaurantLabel.setText(restaurantName);
         addressLabel.setText(address);
@@ -86,6 +88,9 @@ public class PaymentController {
         });
         // Directly display the passed total
         totalLabel.setText("Total: " + total);
+        
+        // Fetch restaurant fees and update total with fees
+        fetchRestaurantFeesAndUpdateLabels();
     }
     public void setLogoBase64(String logoBase64) { this.logoBase64 = logoBase64; }
 
@@ -122,7 +127,7 @@ public class PaymentController {
                         String balStr = resp.substring(idx + 1, end).replaceAll("[^0-9]", "").trim();
                         balance = balStr.isEmpty() ? 0 : Integer.parseInt(balStr);
                     }
-                    int lacking = total - balance;
+                    int lacking = totalWithFees - balance;
                     if (lacking < 0) lacking = 0;
                     int finalLacking = lacking;
                     Platform.runLater(() -> {
@@ -211,6 +216,58 @@ public class PaymentController {
             messageLabel.setText("No address selected.");
             return;
         }
+        
+        // If using wallet payment, check balance first
+        if (useWallet) {
+            new Thread(() -> {
+                try {
+                    java.net.URL url = new java.net.URL("http://localhost:8000/wallet/balance");
+                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                    int code = conn.getResponseCode();
+                    String resp;
+                    try (java.util.Scanner scanner = new java.util.Scanner(
+                            code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream(),
+                            java.nio.charset.StandardCharsets.UTF_8)) {
+                        scanner.useDelimiter("\\A");
+                        resp = scanner.hasNext() ? scanner.next() : "";
+                    }
+                    int balance = 0;
+                    if (code == 200 && resp.contains("wallet_balance")) {
+                        int idx = resp.indexOf(":");
+                        int end = resp.indexOf("}", idx);
+                        String balStr = resp.substring(idx + 1, end).replaceAll("[^0-9]", "").trim();
+                        balance = balStr.isEmpty() ? 0 : Integer.parseInt(balStr);
+                    }
+                    
+                    if (balance < totalWithFees) {
+                        int lacking = totalWithFees - balance;
+                        Platform.runLater(() -> {
+                            walletErrorLabel.setText("Your wallet does not have enough money. You need " + lacking + " more to complete this order.");
+                            walletErrorLabel.setVisible(true); walletErrorLabel.setManaged(true);
+                            topUpWalletBtn.setVisible(true); topUpWalletBtn.setManaged(true);
+                            lackingAmount = lacking;
+                        });
+                        return; // Don't create order if insufficient balance
+                    }
+                    
+                    // If balance is sufficient, proceed with order creation
+                    Platform.runLater(() -> createOrder(useWallet));
+                } catch (Exception ex) {
+                    Platform.runLater(() -> messageLabel.setText("Failed to check wallet balance: " + ex.getMessage()));
+                }
+            }).start();
+        } else {
+            // For online payment, proceed directly
+            createOrder(useWallet);
+        }
+    }
+    
+    private void createOrder(boolean useWallet) {
+        // Only include real food items (id != -1)
+        List<Item> realItems = items.stream().filter(i -> i.id != -1).collect(Collectors.toList());
+        
         // Build order JSON
         StringBuilder itemsJson = new StringBuilder();
         itemsJson.append("[");
@@ -284,22 +341,6 @@ public class PaymentController {
                                     Platform.runLater(() -> {
                                         if (onSuccess != null) onSuccess.run();
                                     });
-                                } else if (payResp.contains("Insufficient wallet balance")) {
-                                    int lacking = total;
-                                    if (payResp.matches(".*current balance ([0-9]+).*")) {
-                                        try {
-                                            String[] parts = payResp.split("current balance ");
-                                            int bal = Integer.parseInt(parts[1].replaceAll("[^0-9]", ""));
-                                            lacking = total - bal;
-                                        } catch (Exception ignore) {}
-                                    }
-                                    int finalLacking = lacking;
-                                    Platform.runLater(() -> {
-                                        walletErrorLabel.setText("Your wallet does not have enough money. You need " + finalLacking + " more to complete this order.");
-                                        walletErrorLabel.setVisible(true); walletErrorLabel.setManaged(true);
-                                        topUpWalletBtn.setVisible(true); topUpWalletBtn.setManaged(true);
-                                        lackingAmount = finalLacking;
-                                    });
                                 } else {
                                     Platform.runLater(() -> messageLabel.setText("Payment failed: " + payResp));
                                 }
@@ -334,11 +375,13 @@ public class PaymentController {
                     Platform.runLater(() -> {
                         taxFee = tax;
                         additionalFee = add;
-                        taxAmount = (int) Math.round(total * (taxFee / 100.0));
-                        int totalWithFees = total + taxAmount + additionalFee;
+                        // The total passed from restaurant page already includes fees
+                        // Just apply coupon discount
+                        totalWithFees = total - couponDiscount;
 
-                        taxFeeLabel.setText("Tax Fee: " + taxAmount + " (" + taxFee + "%)");
-                        additionalFeeLabel.setText("Additional Fee: " + additionalFee);
+                        // For display purposes, show the fees that are already included
+                        taxFeeLabel.setText("Tax Fee: Included in total (" + taxFee + "%)");
+                        additionalFeeLabel.setText("Additional Fee: " + additionalFee + " (included)");
                         totalLabel.setText("Total: " + totalWithFees);
 
                         // Update coupon validator with total including tax and fees
@@ -349,28 +392,30 @@ public class PaymentController {
                     });
                 } else {
                     Platform.runLater(() -> {
-                        taxFeeLabel.setText("");
-                        additionalFeeLabel.setText("");
+                        taxFeeLabel.setText("Tax Fee: Included in total");
+                        additionalFeeLabel.setText("Additional Fee: Included in total");
                         totalLabel.setText("Total: " + total);
+                        totalWithFees = total - couponDiscount; // Apply coupon discount
 
-                        // Update coupon validator with base total
+                        // Update coupon validator with total
                         if (couponValidationController != null) {
                             couponValidationController.setOrderTotal(total);
                         }
                     });
                 }
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    taxFeeLabel.setText("");
-                    additionalFeeLabel.setText("");
-                    totalLabel.setText("Total: " + total);
+                            } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        taxFeeLabel.setText("Tax Fee: Included in total");
+                        additionalFeeLabel.setText("Additional Fee: Included in total");
+                        totalLabel.setText("Total: " + total);
+                        totalWithFees = total - couponDiscount; // Apply coupon discount
 
-                    // Update coupon validator with base total
-                    if (couponValidationController != null) {
-                        couponValidationController.setOrderTotal(total);
-                    }
-                });
-            }
+                        // Update coupon validator with total
+                        if (couponValidationController != null) {
+                            couponValidationController.setOrderTotal(total);
+                        }
+                    });
+                }
         }).start();
     }
 
