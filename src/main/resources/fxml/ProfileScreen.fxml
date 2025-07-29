@@ -8,7 +8,7 @@
         <Insets top="40" right="40" bottom="40" left="40" />
     </padding>
     <children>
-        <Label text="Profile" styleClass="title" />
+        <Label text="👤 Profile" styleClass="title" />
         <ImageView fx:id="profileImageView" fitWidth="120" fitHeight="120" preserveRatio="true" />
         <Button fx:id="changePicBtn" text="Change Picture" />
         <GridPane hgap="20" vgap="15">

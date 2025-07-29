@@ -8,7 +8,7 @@
         <HBox spacing="20" alignment="TOP_CENTER">
             <ListView fx:id="orderList" prefWidth="350.0" prefHeight="450.0" />
             <VBox spacing="10" alignment="TOP_LEFT" prefWidth="400.0">
-                <Label text="Order Details" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+                <Label text="🛒 Order Details" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
                 <Label fx:id="idLabel" text="Order ID: " />
                 <Label fx:id="restaurantLabel" text="Restaurant: " />
                 <Label fx:id="statusLabel" text="Status: " />

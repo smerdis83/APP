@@ -2,21 +2,38 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.SellerDashboardController" alignment="CENTER" spacing="30" style="-fx-background-color: #f8f9fa;">
-    <padding>
-        <Insets top="40" right="40" bottom="40" left="40" />
-    </padding>
-    <children>
-        <Label fx:id="welcomeLabel" />
-        <Label fx:id="roleLabel" />
-        <Button fx:id="profileBtn" text="View Profile" />
-        <Button fx:id="logoutBtn" text="Logout" />
-        <Button fx:id="addRestaurantBtn" text="Add Restaurant" />
-        <Button fx:id="myRestaurantsBtn" text="My Restaurants" />
-        <Button fx:id="restaurantListBtn" text="Restaurant List" />
-        <Button fx:id="orderManagementBtn" text="Order Management" />
-        <Button fx:id="simpleOrderViewerBtn" text="Simple Order Viewer" />
-        <Button fx:id="salesAnalyticsBtn" text="Sales Analytics" style="-fx-background-color: #C2185B; -fx-text-fill: white; -fx-font-weight: bold;" />
-        <VBox fx:id="roleContent" spacing="10" />
-    </children>
-</VBox> 
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.SellerDashboardController">
+    <top>
+        <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #263238;">
+            <Button fx:id="burgerBtn" text="☰" style="-fx-font-size: 22px; -fx-background-color: transparent; -fx-text-fill: white;" />
+        </HBox>
+    </top>
+    <left>
+        <VBox fx:id="sideMenu" spacing="10" style="-fx-background-color: #263238; -fx-padding: 20; -fx-pref-width: 200;">
+            <Separator />
+            <Button fx:id="profileBtn" text="View Profile" styleClass="side-menu-btn" />
+            <Button fx:id="addRestaurantBtn" text="Add Restaurant" styleClass="side-menu-btn" />
+            <Button fx:id="myRestaurantsBtn" text="My Restaurants" styleClass="side-menu-btn" />
+            <Button fx:id="restaurantListBtn" text="Restaurant List" styleClass="side-menu-btn" />
+            <Button fx:id="orderManagementBtn" text="Order Management" styleClass="side-menu-btn" />
+            <Button fx:id="simpleOrderViewerBtn" text="Simple Order Viewer" styleClass="side-menu-btn" />
+            <Button fx:id="salesAnalyticsBtn" text="Sales Analytics" style="-fx-background-color: #C2185B; -fx-text-fill: white; -fx-font-weight: bold;" />
+            <Button fx:id="extraExpensesBtn" text="Manage Extra Expenses" style="-fx-background-color: #C2185B; -fx-text-fill: white; -fx-font-weight: bold;" />
+            <VBox VBox.vgrow="ALWAYS" />
+            <Button fx:id="logoutBtn" text="Logout" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" />
+        </VBox>
+    </left>
+    <center>
+        <VBox alignment="CENTER" spacing="30" style="-fx-background-color: #f8f9fa;">
+            <padding>
+                <Insets top="40" right="40" bottom="40" left="40" />
+            </padding>
+            <children>
+                <Label text="🏪 Seller Dashboard" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #C2185B;" />
+                <Label fx:id="welcomeLabel" />
+                <Label fx:id="roleLabel" />
+                <VBox fx:id="roleContent" spacing="10" />
+            </children>
+        </VBox>
+    </center>
+</BorderPane> 

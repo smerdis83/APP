@@ -8,13 +8,13 @@
             <children>
                 <VBox spacing="20" alignment="TOP_CENTER" style="-fx-background-color: #f8f8ff; -fx-border-color: #b0b0b0; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 30;">
                     <children>
-                        <Label text="Favorite Restaurants" style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #2a2a2a;" />
+                        <Label text="❤️ Favorite Restaurants" style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #2a2a2a;" />
                         <ListView fx:id="favoriteList" prefHeight="600.0" prefWidth="450.0" minWidth="400.0" minHeight="500.0" />
                     </children>
                 </VBox>
                 <VBox spacing="20" alignment="TOP_CENTER" style="-fx-background-color: #f8f8ff; -fx-border-color: #b0b0b0; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 30;">
                     <children>
-                        <Label text="Other Restaurants" style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #2a2a2a;" />
+                        <Label text="🍽️ Other Restaurants" style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #2a2a2a;" />
                         <ListView fx:id="otherList" prefHeight="600.0" prefWidth="450.0" minWidth="400.0" minHeight="500.0" />
                     </children>
                 </VBox>

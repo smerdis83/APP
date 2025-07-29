@@ -1,12 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="CENTER" prefWidth="600.0" prefHeight="400.0" fx:controller="com.example.foodapp.controller.CourierDashboardController">
-    <children>
-        <Label fx:id="welcomeLabel" style="-fx-font-size: 22px; -fx-font-weight: bold;" />
-        <Label fx:id="roleLabel" style="-fx-font-size: 16px;" />
-        <Button fx:id="deliveryManagementBtn" text="Delivery Management" prefWidth="200.0" />
-        <Button fx:id="profileBtn" text="Profile" prefWidth="200.0" />
-        <Button fx:id="logoutBtn" text="Logout" prefWidth="200.0" />
-    </children>
-</VBox> 
+<BorderPane xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.CourierDashboardController">
+    <top>
+        <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #263238;">
+            <Button fx:id="burgerBtn" text="☰" style="-fx-font-size: 22px; -fx-background-color: transparent; -fx-text-fill: white;" />
+        </HBox>
+    </top>
+    <left>
+        <VBox fx:id="sideMenu" spacing="10" style="-fx-background-color: #263238; -fx-padding: 20; -fx-pref-width: 200;">
+            <Separator />
+            <Button fx:id="deliveryManagementBtn" text="Delivery Management" styleClass="side-menu-btn" />
+            <Button fx:id="profileBtn" text="Profile" styleClass="side-menu-btn" />
+            <VBox VBox.vgrow="ALWAYS" />
+            <Button fx:id="logoutBtn" text="Logout" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" />
+        </VBox>
+    </left>
+    <center>
+        <VBox alignment="CENTER" spacing="20" style="-fx-background-color: #f8f9fa;">
+            <children>
+                <Label text="🚚 Courier Dashboard" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2196f3;" />
+                <Label fx:id="welcomeLabel" style="-fx-font-size: 22px; -fx-font-weight: bold;" />
+                <Label fx:id="roleLabel" style="-fx-font-size: 16px;" />
+            </children>
+        </VBox>
+    </center>
+</BorderPane> 

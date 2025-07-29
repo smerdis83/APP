@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import javafx.scene.layout.HBox;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.VBox;
 
 public class RestaurantPageController {
     @FXML private ImageView restaurantLogo;
@@ -30,6 +31,7 @@ public class RestaurantPageController {
     @FXML private Label taxLabel;
     @FXML private Label additionalFeeLabel;
     @FXML private Label sumLabel;
+    @FXML private VBox extraExpensesBox;
     private int taxFee = 0;
     private int additionalFee = 0;
     private double taxPercent = 0.0;
@@ -70,6 +72,8 @@ public class RestaurantPageController {
             restaurantLogo.setImage(null);
         }
         fetchMenus();
+        // Fetch and display extra expenses
+        showExtraExpenses();
     }
 
     public void setOnBack(Runnable r) { this.onBack = r; }
@@ -193,6 +197,15 @@ public class RestaurantPageController {
             if (priceEnd == -1) priceEnd = json.indexOf('}', priceStart);
             String priceStr = json.substring(priceStart, priceEnd).replaceAll("[^0-9]", "").trim();
             int price = Integer.parseInt(priceStr);
+            int discountIdx = json.indexOf("\"discount_price\":", idx);
+            Integer discountPrice = null;
+            if (discountIdx != -1) {
+                int discountStart = discountIdx + 17;
+                int discountEnd = json.indexOf(',', discountStart);
+                if (discountEnd == -1) discountEnd = json.indexOf('}', discountStart);
+                String discountStr = json.substring(discountStart, discountEnd).replaceAll("[^0-9]", "").trim();
+                if (!discountStr.isEmpty()) discountPrice = Integer.parseInt(discountStr);
+            }
             int supplyIdx = json.indexOf("\"supply\":", idx);
             int supply = 0;
             if (supplyIdx != -1) {
@@ -209,7 +222,7 @@ public class RestaurantPageController {
                 int imageEnd = json.indexOf('"', imageStart);
                 imageBase64 = json.substring(imageStart, imageEnd);
             }
-            FoodItem food = new FoodItem(id, name, price, supply, imageBase64);
+            FoodItem food = new FoodItem(id, name, price, supply, imageBase64, discountPrice);
             list.add(food);
             fetchAndSetFoodAvgRating(food);
             idx = nameEnd;
@@ -292,6 +305,7 @@ public class RestaurantPageController {
         try { return Integer.parseInt(num.toString()); } catch (Exception e) { return 0; }
     }
 
+    private int lastCalculatedSum = 0;
     private void updateBasket() {
         basketItems.clear();
         int itemsPrice = 0;
@@ -300,15 +314,28 @@ public class RestaurantPageController {
             int qty = entry.getValue();
             if (food != null && qty > 0) {
                 basketItems.add(new BasketItem(food, qty));
-                itemsPrice += food.price * qty;
+                int unitPrice = (food.discountPrice != null) ? food.discountPrice : food.price;
+                itemsPrice += unitPrice * qty;
             }
         }
         itemsPriceLabel.setText(String.valueOf(itemsPrice));
         int tax = (int) Math.round(itemsPrice * taxPercent);
         taxLabel.setText(tax + "");
         additionalFeeLabel.setText(additionalFee + "");
-        int sum = itemsPrice + tax + additionalFee;
+        int extraExpensesTotal = 0;
+        try {
+            com.example.foodapp.dao.ExtraExpenseDao extraExpenseDao = new com.example.foodapp.dao.ExtraExpenseDao();
+            List<com.example.foodapp.model.entity.ExtraExpense> extras = extraExpenseDao.getExtraExpensesByRestaurant(restaurantId);
+            for (com.example.foodapp.model.entity.ExtraExpense e : extras) {
+                basketItems.add(new BasketItem(new FoodItem(-1, "+ [Extra] " + e.getName(), e.getAmount(), 1, null), 1));
+                extraExpensesTotal += e.getAmount();
+            }
+        } catch (Exception e) {
+            basketItems.add(new BasketItem(new FoodItem(-1, "[Extra] (Failed to load extra expenses)", 0, 1, null), 1));
+        }
+        int sum = itemsPrice + tax + additionalFee + extraExpensesTotal;
         sumLabel.setText(String.valueOf(sum));
+        lastCalculatedSum = sum;
     }
 
     private void handleOrder() {
@@ -320,18 +347,38 @@ public class RestaurantPageController {
         app.showSelectAddressScreen(stage, address -> {
             Platform.runLater(() -> {
                 app.showPaymentPage(stage, restaurantId, restaurantName, logoBase64, address, new java.util.ArrayList<>(basketItems), jwtToken, () -> {
-                    // After payment, reload the restaurant page
                     app.showRestaurantPage(stage, restaurantId, restaurantName, logoBase64, onBack);
                     basketMap.clear();
                     updateBasket();
-                });
+                }, lastCalculatedSum);
             });
         }, () -> {
-            // On back, reload the restaurant page
             Platform.runLater(() -> {
                 app.showRestaurantPage(stage, restaurantId, restaurantName, logoBase64, onBack);
             });
         });
+    }
+
+    private void showExtraExpenses() {
+        extraExpensesBox.getChildren().removeIf(node -> node instanceof Label && ((Label) node).getText().startsWith("+ [Extra]"));
+        try {
+            com.example.foodapp.dao.ExtraExpenseDao extraExpenseDao = new com.example.foodapp.dao.ExtraExpenseDao();
+            List<com.example.foodapp.model.entity.ExtraExpense> extras = extraExpenseDao.getExtraExpensesByRestaurant(restaurantId);
+            for (com.example.foodapp.model.entity.ExtraExpense e : extras) {
+                Label l = new Label("+ [Extra] " + e.getName() + ": " + e.getAmount());
+                l.setStyle("-fx-font-size: 15px; -fx-text-fill: #ff9800;");
+                extraExpensesBox.getChildren().add(l);
+            }
+            if (extras.isEmpty()) {
+                Label l = new Label("No extra expenses for this restaurant.");
+                l.setStyle("-fx-font-size: 14px; -fx-text-fill: #888;");
+                extraExpensesBox.getChildren().add(l);
+            }
+        } catch (Exception e) {
+            Label l = new Label("[Extra] (Failed to load extra expenses: " + e.getMessage() + ")");
+            l.setStyle("-fx-font-size: 14px; -fx-text-fill: #e74c3c;");
+            extraExpensesBox.getChildren().add(l);
+        }
     }
 
     private class FoodCell extends ListCell<FoodItem> {
@@ -370,7 +417,19 @@ public class RestaurantPageController {
                 setGraphic(null);
             } else {
                 nameLabel.setText(item.name);
-                priceLabel.setText(item.price + "");
+                // Show price with strikethrough if discountPrice is set
+                if (item.discountPrice != null) {
+                    Label oldPrice = new Label(item.price + "");
+                    oldPrice.setStyle("-fx-strikethrough: true; -fx-text-fill: #888; -fx-font-size: 14px;");
+                    Label newPrice = new Label(item.discountPrice + "");
+                    newPrice.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 16px; -fx-font-weight: bold;");
+                    VBox priceBox = new VBox(oldPrice, newPrice);
+                    priceLabel.setText("");
+                    priceLabel.setGraphic(priceBox);
+                } else {
+                    priceLabel.setText(item.price + "");
+                    priceLabel.setGraphic(null);
+                }
                 int qty = basketMap.getOrDefault(item.id, 0);
                 qtyLabel.setText(qty + "");
                 plusBtn.setDisable(qty >= item.supply);
@@ -423,7 +482,18 @@ public class RestaurantPageController {
             } else {
                 nameLabel.setText(item.food.name);
                 qtyLabel.setText(" x" + item.quantity);
-                priceLabel.setText(" = " + (item.food.price * item.quantity));
+                if (item.food.discountPrice != null) {
+                    Label oldPrice = new Label(item.food.price + "");
+                    oldPrice.setStyle("-fx-strikethrough: true; -fx-text-fill: #888; -fx-font-size: 13px;");
+                    Label newPrice = new Label(item.food.discountPrice + "");
+                    newPrice.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 15px; -fx-font-weight: bold;");
+                    VBox priceBox = new VBox(oldPrice, newPrice);
+                    priceLabel.setText("");
+                    priceLabel.setGraphic(priceBox);
+                } else {
+                    priceLabel.setText(" = " + (item.food.price * item.quantity));
+                    priceLabel.setGraphic(null);
+                }
                 setGraphic(content);
             }
         }
@@ -435,12 +505,16 @@ public class RestaurantPageController {
         public final int price;
         public final int supply;
         public final String imageBase64;
+        public final Integer discountPrice;
         public double avgRating = -1;
+        public FoodItem(int id, String name, int price, int supply, String imageBase64, Integer discountPrice) {
+            this.id = id; this.name = name; this.price = price; this.supply = supply; this.imageBase64 = imageBase64; this.discountPrice = discountPrice;
+        }
         public FoodItem(int id, String name, int price, int supply, String imageBase64) {
-            this.id = id; this.name = name; this.price = price; this.supply = supply; this.imageBase64 = imageBase64;
+            this(id, name, price, supply, imageBase64, null);
         }
         public FoodItem(int id, String name, int price, int supply) {
-            this(id, name, price, supply, null);
+            this(id, name, price, supply, null, null);
         }
     }
     public static class BasketItem {

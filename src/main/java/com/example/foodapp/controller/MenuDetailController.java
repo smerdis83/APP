@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
+import javafx.concurrent.Task;
 
 public class MenuDetailController {
     @FXML private Label menuLabel;
@@ -28,6 +29,7 @@ public class MenuDetailController {
     @FXML private ImageView foodImageView;
     @FXML private Button chooseFoodImageBtn;
     @FXML private Button cancelBtn;
+    @FXML private TextField foodDiscountField;
     private String foodImageBase64 = null;
 
     private String jwtToken;
@@ -85,6 +87,7 @@ public class MenuDetailController {
                 java.util.Scanner sc = new java.util.Scanner(conn.getInputStream(), "UTF-8");
                 String json = sc.useDelimiter("\\A").next();
                 sc.close();
+                System.out.println("Foods JSON: " + json); // DEBUG PRINT
                 List<FoodItem> items = parseFoods(json);
                 Platform.runLater(() -> foods.setAll(items));
             } catch (Exception ex) {
@@ -115,6 +118,17 @@ public class MenuDetailController {
             if (priceEnd == -1) priceEnd = json.indexOf('}', priceStart);
             String priceStr = json.substring(priceStart, priceEnd).replaceAll("[^0-9]", "").trim();
             int price = Integer.parseInt(priceStr);
+            
+            // Parse discount_price
+            int discountIdx = json.indexOf("\"discount_price\":", idx);
+            Integer discountPrice = null;
+            if (discountIdx != -1) {
+                int discountStart = discountIdx + 17;
+                int discountEnd = json.indexOf(',', discountStart);
+                if (discountEnd == -1) discountEnd = json.indexOf('}', discountStart);
+                String discountStr = json.substring(discountStart, discountEnd).replaceAll("[^0-9]", "").trim();
+                if (!discountStr.isEmpty()) discountPrice = Integer.parseInt(discountStr);
+            }
             
             // Parse description
             String description = "";
@@ -163,7 +177,7 @@ public class MenuDetailController {
                 }
             }
             
-            FoodItem food = new FoodItem(id, name, price, description, supply, keywords, imageBase64);
+            FoodItem food = new FoodItem(id, name, price, description, supply, keywords, imageBase64, discountPrice);
             list.add(food);
             idx = nameEnd;
         }
@@ -191,105 +205,121 @@ public class MenuDetailController {
         }
     }
 
+    // Helper method to update messageLabel on the JavaFX thread
+    private void setMessageLabel(String msg) {
+        Platform.runLater(() -> messageLabel.setText(msg));
+    }
+
     private void handleAddFood() {
-        String name = foodNameField.getText().trim();
-        String priceStr = foodPriceField.getText().trim();
-        String desc = foodDescField.getText().trim();
-        String supplyStr = foodSupplyField.getText().trim();
-        String keywordsStr = foodKeywordsField.getText().trim();
-        if (name.isEmpty() || priceStr.isEmpty() || supplyStr.isEmpty() || keywordsStr.isEmpty()) {
-            messageLabel.setText("Name, price, supply, and keywords are required.");
-            return;
-        }
-        int price, supply;
-        try { price = Integer.parseInt(priceStr); supply = Integer.parseInt(supplyStr); }
-        catch (Exception e) { messageLabel.setText("Price and supply must be integers."); return; }
-        
-        // Parse keywords into array and create JSON array
-        List<String> keywords = Arrays.asList(keywordsStr.split(","));
-        StringBuilder keywordsJson = new StringBuilder("[");
-        for (int i = 0; i < keywords.size(); i++) {
-            if (i > 0) keywordsJson.append(",");
-            keywordsJson.append("\"").append(keywords.get(i).trim().replace("\"", "'")).append("\"");
-        }
-        keywordsJson.append("]");
-        
-        new Thread(() -> {
-            try {
-                // Step 1: Create the food item
-                String foodJson = String.format("{\"name\":\"%s\",\"description\":\"%s\",\"price\":%d,\"supply\":%d,\"keywords\":%s%s}",
-                        name.replace("\"", "'"), 
-                        desc.replace("\"", "'"), 
-                        price, 
-                        supply, 
-                        keywordsJson.toString(),
-                        (foodImageBase64 != null && !foodImageBase64.isEmpty()) ? String.format(",\"image_base64\":\"%s\"", foodImageBase64.replace("\"", "'")) : "");
-                java.net.URL foodUrl = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId + "/item");
-                java.net.HttpURLConnection foodConn = (java.net.HttpURLConnection) foodUrl.openConnection();
-                foodConn.setRequestMethod("POST");
-                foodConn.setRequestProperty("Content-Type", "application/json");
-                foodConn.setRequestProperty("Authorization", "Bearer " + jwtToken);
-                foodConn.setDoOutput(true);
-                try (java.io.OutputStream os = foodConn.getOutputStream()) {
-                    os.write(foodJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                String name = foodNameField.getText().trim();
+                String priceStr = foodPriceField.getText().trim();
+                String discountStr = foodDiscountField.getText().trim();
+                String desc = foodDescField.getText().trim();
+                String supplyStr = foodSupplyField.getText().trim();
+                String keywordsStr = foodKeywordsField.getText().trim();
+                if (name.isEmpty() || priceStr.isEmpty() || supplyStr.isEmpty() || keywordsStr.isEmpty()) {
+                    updateMessage("Name, price, supply, and keywords are required.");
+                    return null;
                 }
-                int foodCode = foodConn.getResponseCode();
-                String foodResp;
-                try (java.util.Scanner scanner = new java.util.Scanner(
-                        foodCode >= 200 && foodCode < 300 ? foodConn.getInputStream() : foodConn.getErrorStream(),
-                        java.nio.charset.StandardCharsets.UTF_8)) {
-                    scanner.useDelimiter("\\A");
-                    foodResp = scanner.hasNext() ? scanner.next() : "";
+                int price, supply;
+                Integer discountPrice = null;
+                try {
+                    price = Integer.parseInt(priceStr);
+                    supply = Integer.parseInt(supplyStr);
+                    if (!discountStr.isEmpty()) {
+                        discountPrice = Integer.parseInt(discountStr);
+                        if (discountPrice >= price) {
+                            updateMessage("Discount price must be less than the original price.");
+                            return null;
+                        }
+                    }
+                } catch (Exception e) { updateMessage("Price, discount, and supply must be integers."); return null; }
+                java.util.List<String> keywords = java.util.Arrays.asList(keywordsStr.split(","));
+                StringBuilder keywordsJson = new StringBuilder("[");
+                for (int i = 0; i < keywords.size(); i++) {
+                    if (i > 0) keywordsJson.append(",");
+                    keywordsJson.append("\"").append(keywords.get(i).trim().replace("\"", "'"))
+                        .append("\"");
                 }
-                if (foodCode != 200 && foodCode != 201) {
-                    Platform.runLater(() -> messageLabel.setText("Failed to create food: " + foodResp));
-                    return;
+                keywordsJson.append("]");
+                try {
+                    String foodJson = String.format("{\"name\":\"%s\",\"description\":\"%s\",\"price\":%d,\"supply\":%d,\"keywords\":%s%s%s}",
+                            name.replace("\"", "'"),
+                            desc.replace("\"", "'"),
+                            price,
+                            supply,
+                            keywordsJson.toString(),
+                            (discountPrice != null) ? String.format(",\"discount_price\":%d", discountPrice) : "",
+                            (foodImageBase64 != null && !foodImageBase64.isEmpty()) ? String.format(",\"image_base64\":\"%s\"", foodImageBase64.replace("\"", "'")) : "");
+                    java.net.URL foodUrl = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId + "/item");
+                    java.net.HttpURLConnection foodConn = (java.net.HttpURLConnection) foodUrl.openConnection();
+                    foodConn.setRequestMethod("POST");
+                    foodConn.setRequestProperty("Content-Type", "application/json");
+                    foodConn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                    foodConn.setDoOutput(true);
+                    try (java.io.OutputStream os = foodConn.getOutputStream()) {
+                        os.write(foodJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                    int foodCode = foodConn.getResponseCode();
+                    String foodResp;
+                    try (java.util.Scanner scanner = new java.util.Scanner(
+                            foodCode >= 200 && foodCode < 300 ? foodConn.getInputStream() : foodConn.getErrorStream(),
+                            java.nio.charset.StandardCharsets.UTF_8)) {
+                        scanner.useDelimiter("\\A");
+                        foodResp = scanner.hasNext() ? scanner.next() : "";
+                    }
+                    if (foodCode != 200 && foodCode != 201) {
+                        updateMessage("Failed to create food: " + foodResp);
+                        return null;
+                    }
+                    int itemId = -1;
+                    int idIdx = foodResp.indexOf("\"id\":");
+                    if (idIdx != -1) {
+                        int idStart = idIdx + 5;
+                        int idEnd = foodResp.indexOf(',', idStart);
+                        if (idEnd == -1) idEnd = foodResp.indexOf('}', idStart);
+                        String idStr = foodResp.substring(idStart, idEnd).replaceAll("[^0-9]", "").trim();
+                        itemId = Integer.parseInt(idStr);
+                    }
+                    if (itemId == -1) {
+                        updateMessage("Could not parse new food item id.");
+                        return null;
+                    }
+                    java.net.URL menuUrl = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId + "/menu/" + encodedMenuTitle);
+                    java.net.HttpURLConnection menuConn = (java.net.HttpURLConnection) menuUrl.openConnection();
+                    menuConn.setRequestMethod("PUT");
+                    menuConn.setRequestProperty("Content-Type", "application/json");
+                    menuConn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                    menuConn.setDoOutput(true);
+                    String menuJson = String.format("{\"item_id\":%d}", itemId);
+                    try (java.io.OutputStream os = menuConn.getOutputStream()) {
+                        os.write(menuJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                    int menuCode = menuConn.getResponseCode();
+                    String menuResp;
+                    try (java.util.Scanner scanner = new java.util.Scanner(
+                            menuCode >= 200 && menuCode < 300 ? menuConn.getInputStream() : menuConn.getErrorStream(),
+                            java.nio.charset.StandardCharsets.UTF_8)) {
+                        scanner.useDelimiter("\\A");
+                        menuResp = scanner.hasNext() ? scanner.next() : "";
+                    }
+                    if (menuCode == 200) {
+                        updateMessage("Food added to menu successfully!");
+                        Platform.runLater(() -> loadFoods());
+                    } else {
+                        updateMessage("Failed to add food to menu: " + menuResp);
+                    }
+                } catch (Exception ex) {
+                    updateMessage("Error: " + ex.getMessage());
                 }
-                // Parse item_id from response
-                int itemId = -1;
-                int idIdx = foodResp.indexOf("\"id\":");
-                if (idIdx != -1) {
-                    int idStart = idIdx + 5;
-                    int idEnd = foodResp.indexOf(',', idStart);
-                    if (idEnd == -1) idEnd = foodResp.indexOf('}', idStart);
-                    String idStr = foodResp.substring(idStart, idEnd).replaceAll("[^0-9]", "").trim();
-                    itemId = Integer.parseInt(idStr);
-                }
-                if (itemId == -1) {
-                    Platform.runLater(() -> messageLabel.setText("Could not parse new food item id."));
-                    return;
-                }
-                // Step 2: Add the food item to the menu
-                java.net.URL menuUrl = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId + "/menu/" + encodedMenuTitle);
-                java.net.HttpURLConnection menuConn = (java.net.HttpURLConnection) menuUrl.openConnection();
-                menuConn.setRequestMethod("PUT");
-                menuConn.setRequestProperty("Content-Type", "application/json");
-                menuConn.setRequestProperty("Authorization", "Bearer " + jwtToken);
-                menuConn.setDoOutput(true);
-                String menuJson = String.format("{\"item_id\":%d}", itemId);
-                try (java.io.OutputStream os = menuConn.getOutputStream()) {
-                    os.write(menuJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                }
-                int menuCode = menuConn.getResponseCode();
-                String menuResp;
-                try (java.util.Scanner scanner = new java.util.Scanner(
-                        menuCode >= 200 && menuCode < 300 ? menuConn.getInputStream() : menuConn.getErrorStream(),
-                        java.nio.charset.StandardCharsets.UTF_8)) {
-                    scanner.useDelimiter("\\A");
-                    menuResp = scanner.hasNext() ? scanner.next() : "";
-                }
-                if (menuCode == 200) {
-                    Platform.runLater(() -> {
-                        messageLabel.setText("Food added to menu successfully!");
-                        loadFoods();
-                    });
-                } else {
-                    Platform.runLater(() -> messageLabel.setText("Failed to add food to menu: " + menuResp));
-                }
-            } catch (Exception ex) {
-                Platform.runLater(() -> messageLabel.setText("Error: " + ex.getMessage()));
+                return null;
             }
-        }).start();
+        };
+        messageLabel.textProperty().bind(task.messageProperty());
+        new Thread(task).start();
     }
 
     private void handleEditFood(FoodItem item) {
@@ -298,13 +328,8 @@ public class MenuDetailController {
         foodPriceField.setText(String.valueOf(item.price));
         foodDescField.setText(item.description != null ? item.description : "");
         foodSupplyField.setText(String.valueOf(item.supply));
-        
-        // Convert keywords list to comma-separated string
-        String keywordsText = "";
-        if (item.keywords != null && !item.keywords.isEmpty()) {
-            keywordsText = String.join(",", item.keywords);
-        }
-        foodKeywordsField.setText(keywordsText);
+        foodKeywordsField.setText(item.keywords != null ? String.join(",", item.keywords) : "");
+        foodDiscountField.setText(item.discountPrice != null ? String.valueOf(item.discountPrice) : "");
         
         // Set the image if available
         if (item.imageBase64 != null && !item.imageBase64.isEmpty()) {
@@ -334,21 +359,26 @@ public class MenuDetailController {
         String description = foodDescField.getText().trim();
         String supplyStr = foodSupplyField.getText().trim();
         String keywords = foodKeywordsField.getText().trim();
-        
+        String discountStr = foodDiscountField.getText().trim();
         if (name.isEmpty() || priceStr.isEmpty() || supplyStr.isEmpty()) {
             messageLabel.setText("Please fill in all required fields.");
             return;
         }
-        
         try {
             int price = Integer.parseInt(priceStr);
             int supply = Integer.parseInt(supplyStr);
-            
+            Integer discountPrice = null;
+            if (!discountStr.isEmpty()) {
+                discountPrice = Integer.parseInt(discountStr);
+                if (discountPrice >= price) {
+                    messageLabel.setText("Discount price must be less than the original price.");
+                    return;
+                }
+            }
             if (price <= 0 || supply < 0) {
                 messageLabel.setText("Price must be positive and supply must be non-negative.");
                 return;
             }
-            
             // Parse keywords into array
             List<String> keywordsList = new ArrayList<>();
             if (!keywords.isEmpty()) {
@@ -357,39 +387,46 @@ public class MenuDetailController {
                     keywordsList.add(keyword.trim());
                 }
             }
-            
             // Create keywords JSON array
             StringBuilder keywordsJson = new StringBuilder("[");
             for (int i = 0; i < keywordsList.size(); i++) {
                 if (i > 0) keywordsJson.append(",");
-                keywordsJson.append("\"").append(keywordsList.get(i).replace("\"", "'")).append("\"");
+                keywordsJson.append("\"").append(keywordsList.get(i).replace("\"", "'"))
+                    .append("\"");
             }
             keywordsJson.append("]");
-            
             // Create the update JSON
-            String updateJson = String.format(
-                "{\"name\":\"%s\",\"price\":%d,\"description\":\"%s\",\"supply\":%d,\"keywords\":%s,\"image_base64\":\"%s\"}",
-                name.replace("\"", "'"),
-                price,
-                description.replace("\"", "'"),
-                supply,
-                keywordsJson.toString(),
-                foodImageBase64 != null ? foodImageBase64.replace("\"", "'") : ""
-            );
-            
+            StringBuilder updateJson = new StringBuilder();
+            updateJson.append("{");
+            updateJson.append("\"name\":\"").append(name.replace("\"", "'"))
+                .append("\",");
+            updateJson.append("\"price\":").append(price).append(",");
+            updateJson.append("\"description\":\"").append(description.replace("\"", "'"))
+                .append("\",");
+            updateJson.append("\"supply\":").append(supply).append(",");
+            updateJson.append("\"keywords\":").append(keywordsJson.toString());
+            if (discountPrice != null) {
+                updateJson.append(",\"discount_price\":").append(discountPrice);
+            }
+            if (foodImageBase64 != null && !foodImageBase64.isEmpty()) {
+                updateJson.append(",\"image_base64\":\"")
+                    .append(foodImageBase64.replace("\"", "'"))
+                    .append("\"");
+            }
+            updateJson.append("}");
+            final String updateJsonStr = updateJson.toString();
+            final int finalFoodId = foodId;
             new Thread(() -> {
                 try {
-                    java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId + "/item/" + foodId);
+                    java.net.URL url = new java.net.URL("http://localhost:8000/restaurants/" + restaurantId + "/item/" + finalFoodId);
                     java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("PUT");
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
                     conn.setDoOutput(true);
-                    
                     try (java.io.OutputStream os = conn.getOutputStream()) {
-                        os.write(updateJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        os.write(updateJsonStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
                     }
-                    
                     int code = conn.getResponseCode();
                     if (code == 200 || code == 204) {
                         Platform.runLater(() -> {
@@ -410,7 +447,6 @@ public class MenuDetailController {
                     Platform.runLater(() -> messageLabel.setText("Error: " + ex.getMessage()));
                 }
             }).start();
-            
         } catch (NumberFormatException e) {
             messageLabel.setText("Please enter valid numbers for price and supply.");
         }
@@ -422,6 +458,7 @@ public class MenuDetailController {
         foodDescField.clear();
         foodSupplyField.clear();
         foodKeywordsField.clear();
+        foodDiscountField.clear();
         foodImageView.setImage(null);
         foodImageBase64 = null;
         addFoodBtn.setText("Add Food");
@@ -437,16 +474,14 @@ public class MenuDetailController {
         public int supply;
         public List<String> keywords;
         public String imageBase64;
-        public FoodItem(int id, String name, int price) { this.id = id; this.name = name; this.price = price; }
-        public FoodItem(int id, String name, int price, String description, int supply, List<String> keywords, String imageBase64) {
-            this.id = id;
-            this.name = name;
-            this.price = price;
-            this.description = description;
-            this.supply = supply;
-            this.keywords = keywords;
-            this.imageBase64 = imageBase64;
+        public final Integer discountPrice;
+        public FoodItem(int id, String name, int price, String description, int supply, List<String> keywords, String imageBase64, Integer discountPrice) {
+            this.id = id; this.name = name; this.price = price; this.description = description; this.supply = supply; this.keywords = keywords; this.imageBase64 = imageBase64; this.discountPrice = discountPrice;
         }
-        @Override public String toString() { return name + " (" + price + ")"; }
+        public FoodItem(int id, String name, int price) { this(id, name, price, null, 0, null, null, null); }
+        public FoodItem(int id, String name, int price, String description, int supply, List<String> keywords, String imageBase64) {
+            this(id, name, price, description, supply, keywords, imageBase64, null);
+        }
+        @Override public String toString() { return name + " (" + price + (discountPrice != null ? ", discount: " + discountPrice : "") + ")"; }
     }
 } 

@@ -10,6 +10,7 @@ public class FoodItem {
     private int price;
     private int supply;
     private List<String> keywords;
+    private Integer discountPrice; // null if no discount
     @JsonAlias({"vendor_id", "vendorId"})
     private int vendorId; // restaurant/owner id
     @JsonAlias({"image_base64", "imageBase64"})
@@ -17,7 +18,7 @@ public class FoodItem {
 
     public FoodItem() {}
 
-    public FoodItem(int id, String name, String description, int price, int supply, List<String> keywords, int vendorId, String imageBase64) {
+    public FoodItem(int id, String name, String description, int price, int supply, List<String> keywords, int vendorId, String imageBase64, Integer discountPrice) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -26,6 +27,7 @@ public class FoodItem {
         this.keywords = keywords;
         this.vendorId = vendorId;
         this.imageBase64 = imageBase64;
+        this.discountPrice = discountPrice;
     }
 
     // Getters and setters
@@ -47,6 +49,9 @@ public class FoodItem {
     public List<String> getKeywords() { return keywords; }
     public void setKeywords(List<String> keywords) { this.keywords = keywords; }
 
+    public Integer getDiscountPrice() { return discountPrice; }
+    public void setDiscountPrice(Integer discountPrice) { this.discountPrice = discountPrice; }
+
     public int getVendorId() { return vendorId; }
     public void setVendorId(int vendorId) { this.vendorId = vendorId; }
 
@@ -60,6 +65,7 @@ public class FoodItem {
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 ", price=" + price +
+                ", discountPrice=" + discountPrice +
                 ", supply=" + supply +
                 ", keywords=" + keywords +
                 ", vendorId=" + vendorId +

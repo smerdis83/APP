@@ -11,6 +11,7 @@
         <Button fx:id="chooseFoodImageBtn" text="Choose Image" />
         <TextField fx:id="foodNameField" promptText="Food Name" prefWidth="300.0" />
         <TextField fx:id="foodPriceField" promptText="Price (integer)" prefWidth="300.0" />
+        <TextField fx:id="foodDiscountField" promptText="Discount Price (optional)" prefWidth="300.0" />
         <TextField fx:id="foodDescField" promptText="Description" prefWidth="300.0" />
         <TextField fx:id="foodSupplyField" promptText="Supply (integer)" prefWidth="300.0" />
         <TextField fx:id="foodKeywordsField" promptText="Keywords (comma separated)" prefWidth="300.0" />

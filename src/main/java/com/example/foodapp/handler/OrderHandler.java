@@ -149,7 +149,22 @@ public class OrderHandler implements HttpHandler {
                 order.setTaxFee(taxAmount);
                 order.setAdditionalFee(additionalFee);
                 order.setCourierFee(courierFee);
-                order.setPayPrice(Math.max(0, totalPrice - couponDiscount));
+                // After calculating rawPrice, taxAmount, and additionalFee
+                int extraExpensesTotal = 0;
+                try {
+                    com.example.foodapp.dao.ExtraExpenseDao extraExpenseDao = new com.example.foodapp.dao.ExtraExpenseDao();
+                    int restaurantId = order.getItems().isEmpty() ? -1 : foodItemDao.getFoodItemById(order.getItems().get(0).getItem_id()).getVendorId();
+                    if (restaurantId != -1) {
+                        List<com.example.foodapp.model.entity.ExtraExpense> extras = extraExpenseDao.getExtraExpensesByRestaurant(restaurantId);
+                        for (com.example.foodapp.model.entity.ExtraExpense e : extras) {
+                            extraExpensesTotal += e.getAmount();
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("[ERROR] Failed to fetch extra expenses: " + e.getMessage());
+                }
+                // When setting payPrice:
+                order.setPayPrice(rawPrice + taxAmount + additionalFee + extraExpensesTotal);
                 
                 System.out.println("[DEBUG] Order price breakdown:");
                 System.out.println("[DEBUG]   Raw Price: " + rawPrice);

@@ -177,6 +177,7 @@ public class LoginApp extends Application {
                 controller.setOnOrderManagement(() -> showRestaurantOrdersScreen(stage));
                 controller.setOnSimpleOrderViewer(() -> showSimpleRestaurantOrdersScreen(stage));
                 controller.setOnSalesAnalytics(() -> showSalesAnalyticsScreen(stage));
+                controller.setOnExtraExpenses(() -> showExtraExpenseManagementScreen(stage));
                 Scene scene = new Scene(root, 1000, 700);
                 scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
                 stage.setTitle("Seller Dashboard");
@@ -201,7 +202,6 @@ public class LoginApp extends Application {
                 Parent root = loader.load();
                 com.example.foodapp.controller.BuyerDashboardController controller = loader.getController();
                 controller.setApp(this);
-                controller.setWelcome("User");
                 controller.setRole(role);
                 controller.setJwtToken(jwtToken);
                 controller.setOnProfile(v -> fetchAndShowProfilePage(stage, role));
@@ -501,23 +501,26 @@ public class LoginApp extends Application {
                     if (updatedAt == null) updatedAt = getField.apply("updated_at");
                     final String finalCreatedAt = createdAt;
                     final String finalUpdatedAt = updatedAt;
+                    final String restaurantIdStr = getField.apply("vendor_id");
+                    final int restaurantId = restaurantIdStr.matches("\\d+") ? Integer.parseInt(restaurantIdStr) : -1;
                     javafx.application.Platform.runLater(() -> controller.setOrderDetails(
                         getField.apply("id"),
                         getField.apply("status"),
                         getField.apply("pay_price"),
                         finalCreatedAt,
                         finalUpdatedAt,
-                        items
+                        items,
+                        restaurantId
                     ));
                 } else {
                     // Show error in all fields
                     javafx.application.Platform.runLater(() -> controller.setOrderDetails(
-                        "Error", "Error", "Error", "Error", "Error", java.util.Collections.singletonList("Failed to fetch order details")));
+                        "Error", "Error", "Error", "Error", "Error", java.util.Collections.singletonList("Failed to fetch order details"), -1));
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
                 javafx.application.Platform.runLater(() -> controller.setOrderDetails(
-                    "Error", "Error", "Error", "Error", "Error", java.util.Collections.singletonList("Error: " + ex.getMessage())));
+                    "Error", "Error", "Error", "Error", "Error", java.util.Collections.singletonList("Error: " + ex.getMessage()), -1));
             }
         }).start();
     }
@@ -892,7 +895,7 @@ public class LoginApp extends Application {
         }
     }
 
-    public void showPaymentPage(javafx.stage.Stage stage, int restaurantId, String restaurantName, String logoBase64, String address, java.util.List<com.example.foodapp.controller.RestaurantPageController.BasketItem> basketItems, String jwtToken, Runnable onBack) {
+    public void showPaymentPage(javafx.stage.Stage stage, int restaurantId, String restaurantName, String logoBase64, String address, java.util.List<com.example.foodapp.controller.RestaurantPageController.BasketItem> basketItems, String jwtToken, Runnable onBack, int total) {
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/Payment.fxml"));
             javafx.scene.Parent root = loader.load();
@@ -901,7 +904,7 @@ public class LoginApp extends Application {
             controller.setJwtToken(jwtToken);
             controller.setOrderDetails(restaurantName, restaurantId, address,
                 basketItems.stream().map(b -> new com.example.foodapp.controller.PaymentController.Item(b.food.id, b.food.name, b.quantity, b.food.price)).toList(),
-                basketItems.stream().mapToInt(b -> b.food.price * b.quantity).sum()
+                total
             );
             controller.setOnBack(() -> onBack.run());
             controller.setOnSuccess(() -> {
@@ -910,7 +913,7 @@ public class LoginApp extends Application {
                     onBack.run();
                 });
             });
-            controller.setOnTopUp(() -> showTopUpWalletPage(stage, jwtToken, () -> showPaymentPage(stage, restaurantId, restaurantName, logoBase64, address, basketItems, jwtToken, onBack)));
+            controller.setOnTopUp(() -> showTopUpWalletPage(stage, jwtToken, () -> showPaymentPage(stage, restaurantId, restaurantName, logoBase64, address, basketItems, jwtToken, onBack, total)));
             javafx.scene.Scene scene = new javafx.scene.Scene(root);
             scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
             stage.setScene(scene);
@@ -1033,7 +1036,11 @@ public class LoginApp extends Application {
             Parent root = loader.load();
             com.example.foodapp.controller.SalesAnalyticsController controller = loader.getController();
             controller.setJwtToken(this.jwtToken);
-            controller.setSellerId(extractUserIdFromToken());
+            if ("ADMIN".equalsIgnoreCase(userRole)) {
+                controller.setAdminMode(true);
+            } else {
+                controller.setSellerId(extractUserIdFromToken());
+            }
             controller.setOnBack(() -> showDashboard(stage, userRole));
             Scene scene = new Scene(root, 1200, 800);
             scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
@@ -1079,6 +1086,27 @@ public class LoginApp extends Application {
         } catch (Exception e) {
             System.out.println("Error extracting user ID from token: " + e.getMessage());
             return 0;
+        }
+    }
+
+    private void showExtraExpenseManagementScreen(Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ExtraExpenseManagement.fxml"));
+            Parent root = loader.load();
+            com.example.foodapp.controller.ExtraExpenseManagementController controller = loader.getController();
+            controller.setOnBack(() -> showDashboard(stage, "SELLER"));
+            // Load seller's restaurants
+            com.example.foodapp.dao.RestaurantDao dao = new com.example.foodapp.dao.RestaurantDao();
+            int sellerId = extractUserIdFromToken();
+            controller.setSellerId(sellerId);
+            controller.loadRestaurants(dao.findByOwner(sellerId));
+            Scene scene = new Scene(root, 600, 500);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            stage.setTitle("Manage Extra Expenses");
+            stage.setScene(scene);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

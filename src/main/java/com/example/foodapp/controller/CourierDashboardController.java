@@ -3,6 +3,7 @@ package com.example.foodapp.controller;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.layout.VBox;
 
 public class CourierDashboardController {
     @FXML public Label welcomeLabel;
@@ -10,6 +11,8 @@ public class CourierDashboardController {
     @FXML public Button deliveryManagementBtn;
     @FXML public Button logoutBtn;
     @FXML public Button profileBtn;
+    @FXML private VBox sideMenu;
+    @FXML private Button burgerBtn;
 
     private Runnable onDeliveryManagement;
     private Runnable onLogout;
@@ -23,6 +26,10 @@ public class CourierDashboardController {
 
     @FXML
     public void initialize() {
+        if (burgerBtn != null && sideMenu != null) {
+            burgerBtn.setOnAction(e -> sideMenu.setVisible(!sideMenu.isVisible()));
+            sideMenu.setVisible(true);
+        }
         if (deliveryManagementBtn != null) deliveryManagementBtn.setOnAction(e -> { if (onDeliveryManagement != null) onDeliveryManagement.run(); });
         if (logoutBtn != null) logoutBtn.setOnAction(e -> { if (onLogout != null) onLogout.run(); });
         if (profileBtn != null) profileBtn.setOnAction(e -> { if (onProfile != null) onProfile.run(); });

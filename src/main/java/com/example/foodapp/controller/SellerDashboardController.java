@@ -16,7 +16,10 @@ public class SellerDashboardController {
     @FXML public Button orderManagementBtn;
     @FXML public Button simpleOrderViewerBtn;
     @FXML public Button salesAnalyticsBtn;
+    @FXML public Button extraExpensesBtn;
     @FXML public VBox roleContent;
+    @FXML private VBox sideMenu;
+    @FXML private Button burgerBtn;
 
     private Consumer<Void> onProfile;
     public void setOnProfile(Consumer<Void> callback) { this.onProfile = callback; }
@@ -42,8 +45,15 @@ public class SellerDashboardController {
     private Runnable onSalesAnalytics;
     public void setOnSalesAnalytics(Runnable callback) { this.onSalesAnalytics = callback; }
 
+    private Runnable onExtraExpenses;
+    public void setOnExtraExpenses(Runnable callback) { this.onExtraExpenses = callback; }
+
     @FXML
     public void initialize() {
+        if (burgerBtn != null && sideMenu != null) {
+            burgerBtn.setOnAction(e -> sideMenu.setVisible(!sideMenu.isVisible()));
+            sideMenu.setVisible(true);
+        }
         if (profileBtn != null) profileBtn.setOnAction(e -> { if (onProfile != null) onProfile.accept(null); });
         if (logoutBtn != null) logoutBtn.setOnAction(e -> { if (onLogout != null) onLogout.run(); });
         if (addRestaurantBtn != null) addRestaurantBtn.setOnAction(e -> { if (onAddRestaurant != null) onAddRestaurant.run(); });
@@ -52,6 +62,7 @@ public class SellerDashboardController {
         if (orderManagementBtn != null) orderManagementBtn.setOnAction(e -> { if (onOrderManagement != null) onOrderManagement.run(); });
         if (simpleOrderViewerBtn != null) simpleOrderViewerBtn.setOnAction(e -> { if (onSimpleOrderViewer != null) onSimpleOrderViewer.run(); });
         if (salesAnalyticsBtn != null) salesAnalyticsBtn.setOnAction(e -> { if (onSalesAnalytics != null) onSalesAnalytics.run(); });
+        if (extraExpensesBtn != null) extraExpensesBtn.setOnAction(e -> { if (onExtraExpenses != null) onExtraExpenses.run(); });
     }
 
     public void setWelcome(String name) { welcomeLabel.setText("Welcome, " + name + "!"); }

@@ -286,6 +286,7 @@ public class RestaurantHandler implements HttpHandler {
                 item.setSupply(update.getSupply());
                 item.setKeywords(update.getKeywords());
                 item.setImageBase64(update.getImageBase64());
+                item.setDiscountPrice(update.getDiscountPrice());
                 try { foodItemDao.updateFoodItem(item); } catch (Exception e) { sendJson(exchange, 500, new ErrorResponse("Database error: " + e.getMessage())); return; }
                 sendJson(exchange, 200, item);
                 return;

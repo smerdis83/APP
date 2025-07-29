@@ -2,21 +2,53 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.BuyerDashboardController" alignment="CENTER" spacing="30" style="-fx-background-color: #f8f9fa;">
-    <padding>
-        <Insets top="40" right="40" bottom="40" left="40" />
-    </padding>
-    <children>
-        <Label fx:id="welcomeLabel" />
-        <Label fx:id="roleLabel" />
-        <Button fx:id="profileBtn" text="View Profile" />
-        <Button fx:id="logoutBtn" text="Logout" />
-        <Button fx:id="orderHistoryBtn" text="Order History" />
-        <Button fx:id="activeOrdersBtn" text="Active Orders" />
-        <Button fx:id="favoritesBtn" text="Favorites" />
-        <Button fx:id="restaurantListBtn" text="Restaurant List" />
-        <Button fx:id="searchBtn" text="Search Foods &amp; Restaurants" />
-        <Button fx:id="topUpWalletBtn" text="Top Up Wallet" />
-        <VBox fx:id="roleContent" spacing="10" />
-    </children>
-</VBox> 
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.BuyerDashboardController">
+    <top>
+        <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #263238;">
+            <Button fx:id="burgerBtn" text="☰" style="-fx-font-size: 22px; -fx-background-color: transparent; -fx-text-fill: white;" />
+        </HBox>
+    </top>
+    <left>
+        <VBox fx:id="sideMenu" spacing="10" style="-fx-background-color: #263238; -fx-padding: 20; -fx-pref-width: 200;">
+            <Separator />
+            <Button fx:id="profileBtn" text="View Profile" styleClass="side-menu-btn" />
+            <Button fx:id="orderHistoryBtn" text="Order History" styleClass="side-menu-btn" />
+            <Button fx:id="activeOrdersBtn" text="Active Orders" styleClass="side-menu-btn" />
+            <Button fx:id="favoritesBtn" text="Favorites" styleClass="side-menu-btn" />
+            <Button fx:id="restaurantListBtn" text="Restaurant List" styleClass="side-menu-btn" />
+            <Button fx:id="searchBtn" text="Search Foods &amp; Restaurants" styleClass="side-menu-btn" />
+            <Button fx:id="topUpWalletBtn" text="Top Up Wallet" styleClass="side-menu-btn" />
+            <VBox VBox.vgrow="ALWAYS" />
+            <Button fx:id="logoutBtn" text="Logout" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" />
+        </VBox>
+    </left>
+    <center>
+        <VBox alignment="CENTER" spacing="30" style="-fx-background-color: #f8f9fa;">
+            <padding>
+                <Insets top="40" right="40" bottom="40" left="40" />
+            </padding>
+            <children>
+                <HBox alignment="CENTER" spacing="16">
+                    <Label text="🔥" style="-fx-font-size: 32px;" />
+                    <Label text="Special Offers" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #C2185B;" />
+                    <Label text="🔥" style="-fx-font-size: 32px;" />
+                </HBox>
+                <ScrollPane hbarPolicy="ALWAYS" vbarPolicy="NEVER" fitToHeight="true" fitToWidth="false" style="-fx-background-color:transparent;">
+                    <content>
+                        <HBox fx:id="specialOffersBox" spacing="15" alignment="CENTER" />
+                    </content>
+                </ScrollPane>
+                <VBox alignment="CENTER" spacing="10">
+                    <Label text="🏆 Best Restaurants" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #C2185B;" />
+                    <ScrollPane hbarPolicy="ALWAYS" vbarPolicy="NEVER" fitToHeight="true" fitToWidth="false" style="-fx-background-color:transparent;">
+                        <content>
+                            <HBox fx:id="bestRestaurantsBox" spacing="15" alignment="CENTER" />
+                        </content>
+                    </ScrollPane>
+                </VBox>
+                <Label fx:id="roleLabel" />
+                <VBox fx:id="roleContent" spacing="10" />
+            </children>
+        </VBox>
+    </center>
+</BorderPane> 

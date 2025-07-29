@@ -29,17 +29,27 @@ public class FavoritesController {
     private Consumer<RestaurantItem> onRestaurantClick;
     private ObservableList<RestaurantItem> favoriteRestaurants = FXCollections.observableArrayList();
     private ObservableList<RestaurantItem> otherRestaurants = FXCollections.observableArrayList();
+    private Runnable onBackFromRestaurant;
 
     public void setJwtToken(String token) { this.jwtToken = token; }
     public void setOnBack(Runnable r) { this.onBack = r; }
     public void setOnRestaurantClick(Consumer<RestaurantItem> callback) { this.onRestaurantClick = callback; }
+    public void setOnBackFromRestaurant(Runnable r) { this.onBackFromRestaurant = r; }
 
     @FXML
     public void initialize() {
         loadRestaurantsAndFavorites();
         backBtn.setOnAction(e -> { if (onBack != null) onBack.run(); });
-        // Set up double-click to open restaurant page (will be set by LoginApp)
-        favoriteList.setCellFactory(list -> new RestaurantCell(favoriteIds, this::toggleFavorite, onRestaurantClick));
+        // Set up single-click to open restaurant page
+        favoriteList.setCellFactory(list -> new RestaurantCell(favoriteIds, this::toggleFavorite, item -> {
+            if (onRestaurantClick != null) onRestaurantClick.accept(item);
+        }));
+        favoriteList.setOnMouseClicked(ev -> {
+            RestaurantItem selected = favoriteList.getSelectionModel().getSelectedItem();
+            if (selected != null && ev.getClickCount() == 1 && onRestaurantClick != null) {
+                onRestaurantClick.accept(selected);
+            }
+        });
         otherList.setCellFactory(list -> new RestaurantCell(favoriteIds, this::toggleFavorite, onRestaurantClick));
     }
 

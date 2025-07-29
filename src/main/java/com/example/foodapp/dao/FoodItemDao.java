@@ -23,6 +23,7 @@ public class FoodItemDao {
                 "name VARCHAR(100) NOT NULL, " +
                 "description TEXT, " +
                 "price INT NOT NULL, " +
+                "discount_price INT, " + // nullable
                 "supply INT NOT NULL, " +
                 "keywords TEXT, " + // comma-separated
                 "vendor_id INT NOT NULL, " +
@@ -36,17 +37,22 @@ public class FoodItemDao {
     }
 
     public void addFoodItem(FoodItem item) throws SQLException {
-        String sql = "INSERT INTO food_items (name, description, price, supply, keywords, vendor_id, image_base64) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO food_items (name, description, price, discount_price, supply, keywords, vendor_id, image_base64) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = JdbcUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, item.getName());
             ps.setString(2, item.getDescription());
             ps.setInt(3, item.getPrice());
-            ps.setInt(4, item.getSupply());
-            ps.setString(5, String.join(",", item.getKeywords()));
-            ps.setInt(6, item.getVendorId());
-            ps.setString(7, item.getImageBase64());
+            if (item.getDiscountPrice() != null) {
+                ps.setInt(4, item.getDiscountPrice());
+            } else {
+                ps.setNull(4, java.sql.Types.INTEGER);
+            }
+            ps.setInt(5, item.getSupply());
+            ps.setString(6, String.join(",", item.getKeywords()));
+            ps.setInt(7, item.getVendorId());
+            ps.setString(8, item.getImageBase64());
             int affectedRows = ps.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Creating food item failed, no rows affected.");
@@ -91,16 +97,21 @@ public class FoodItemDao {
     }
 
     public void updateFoodItem(FoodItem item) throws SQLException {
-        String sql = "UPDATE food_items SET name=?, description=?, price=?, supply=?, keywords=?, image_base64=? WHERE id=?";
+        String sql = "UPDATE food_items SET name=?, description=?, price=?, discount_price=?, supply=?, keywords=?, image_base64=? WHERE id=?";
         try (Connection conn = JdbcUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, item.getName());
             ps.setString(2, item.getDescription());
             ps.setInt(3, item.getPrice());
-            ps.setInt(4, item.getSupply());
-            ps.setString(5, String.join(",", item.getKeywords()));
-            ps.setString(6, item.getImageBase64());
-            ps.setInt(7, item.getId());
+            if (item.getDiscountPrice() != null) {
+                ps.setInt(4, item.getDiscountPrice());
+            } else {
+                ps.setNull(4, java.sql.Types.INTEGER);
+            }
+            ps.setInt(5, item.getSupply());
+            ps.setString(6, String.join(",", item.getKeywords()));
+            ps.setString(7, item.getImageBase64());
+            ps.setInt(8, item.getId());
             ps.executeUpdate();
         }
     }
@@ -127,15 +138,34 @@ public class FoodItemDao {
         return items;
     }
 
+    public List<FoodItem> getDiscountedFoodItems() throws SQLException {
+        List<FoodItem> items = new ArrayList<>();
+        String sql = "SELECT * FROM food_items WHERE discount_price IS NOT NULL AND discount_price < price";
+        try (Connection conn = JdbcUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                items.add(mapRowToFoodItem(rs));
+            }
+        }
+        return items;
+    }
+
     private FoodItem mapRowToFoodItem(ResultSet rs) throws SQLException {
         FoodItem item = new FoodItem();
         item.setId(rs.getInt("id"));
         item.setName(rs.getString("name"));
         item.setDescription(rs.getString("description"));
         item.setPrice(rs.getInt("price"));
+        int discount = rs.getInt("discount_price");
+        if (rs.wasNull()) {
+            item.setDiscountPrice(null);
+        } else {
+            item.setDiscountPrice(discount);
+        }
         item.setSupply(rs.getInt("supply"));
-        String keywordsStr = rs.getString("keywords");
-        item.setKeywords(keywordsStr != null && !keywordsStr.isEmpty() ? Arrays.asList(keywordsStr.split(",")) : new ArrayList<>());
+        String keywords = rs.getString("keywords");
+        item.setKeywords(keywords == null ? new java.util.ArrayList<>() : java.util.Arrays.asList(keywords.split(",")));
         item.setVendorId(rs.getInt("vendor_id"));
         item.setImageBase64(rs.getString("image_base64"));
         return item;

@@ -27,12 +27,16 @@
                 <Button fx:id="nextMenuBtn" text="Next" />
             </children>
         </HBox>
+        <VBox fx:id="extraExpensesBox" alignment="CENTER_LEFT" spacing="5" style="-fx-background-color: #fff3e0; -fx-border-color: #ff9800; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 10;">
+            <Label text="Extra Expenses (added to every order):" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ff9800;" />
+            <!-- Extra expenses will be added here dynamically -->
+        </VBox>
         <HBox alignment="TOP_CENTER" spacing="40">
             <children>
                 <!-- Food List -->
                 <VBox alignment="TOP_CENTER" spacing="10" style="-fx-background-color: #f8f8ff; -fx-border-color: #b0b0b0; -fx-border-width: 2; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 20;">
                     <children>
-                        <!-- The menuNameLabel above replaces the static 'Menu' label here -->
+                        <!-- The ListView below is used for food items. Each cell will now show the food image, name, and price (with strikethrough if discounted). -->
                         <ListView fx:id="foodList" prefHeight="600.0" prefWidth="500.0" />
                     </children>
                 </VBox>
