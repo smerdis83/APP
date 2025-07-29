@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.RestaurantCommentsController" spacing="16" alignment="TOP_CENTER" prefWidth="700.0" prefHeight="600.0">
+    <children>
+        <Button fx:id="backBtn" text="Back to Restaurant List" maxWidth="200" />
+        <Label fx:id="restaurantNameLabel" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-padding: 8;" />
+        <ListView fx:id="commentsList" prefWidth="650.0" prefHeight="500.0" />
+    </children>
+</VBox> 

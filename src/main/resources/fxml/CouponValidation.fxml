@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<fx:root type="VBox" spacing="5" xmlns:fx="http://javafx.com/fxml/1">
+   <padding>
+      <Insets top="5" right="5" bottom="5" left="5"/>
+   </padding>
+
+   <Label text="Apply Coupon" style="-fx-font-weight: bold;"/>
+   
+   <HBox spacing="5" alignment="CENTER_LEFT">
+      <TextField fx:id="couponCodeField" promptText="Enter coupon code" HBox.hgrow="ALWAYS"/>
+      <Button fx:id="validateCouponBtn" text="Apply" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+   </HBox>
+   
+   <Label fx:id="couponStatusLabel" text="" visible="false" style="-fx-font-size: 12px;"/>
+   <Label fx:id="discountLabel" text="" visible="false" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+</fx:root> 

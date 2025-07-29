@@ -1,0 +1,575 @@
+{
+	"info": {
+		"_postman_id": "d9e8c7b6-a5b4-4c3d-2e1f-0a9b8c7d6e5f",
+		"name": "Comprehensive Scenarios Grader",
+		"description": "A complete and detailed set of test scenarios for grading the Food Reservation System API, based on the comprehensive specification.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Successful Registration and Login",
+					"item": [
+						{
+							"name": "Register Buyer",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", () => { pm.response.to.have.status(200); });",
+											"const res = pm.response.json();",
+											"pm.test(\"Response contains user_id and token\", () => {",
+											"    pm.expect(res).to.have.property('user_id');",
+											"    pm.expect(res).to.have.property('token');",
+											"});",
+											"pm.collectionVariables.set(\"buyer_id\", res.user_id);",
+											"pm.collectionVariables.set(\"buyer_token\", res.token);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"full_name\": \"Test Buyer\",\n    \"phone\": \"09120000001\",\n    \"password\": \"password123\",\n    \"role\": \"buyer\",\n    \"address\": \"Buyer Address\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/register",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"register"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Register Seller",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", () => { pm.response.to.have.status(200); });",
+											"const res = pm.response.json();",
+											"pm.test(\"Response contains user_id and token\", () => {",
+											"    pm.expect(res).to.have.property('user_id');",
+											"    pm.expect(res).to.have.property('token');",
+											"});",
+											"pm.collectionVariables.set(\"seller_id\", res.user_id);",
+											"pm.collectionVariables.set(\"seller_token\", res.token);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"full_name\": \"Test Seller\",\n    \"phone\": \"09120000002\",\n    \"password\": \"password123\",\n    \"role\": \"seller\",\n    \"address\": \"Seller Address\",\n    \"bank_info\": {\n        \"bank_name\": \"Test Bank\",\n        \"account_number\": \"1234567890\"\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/register",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"register"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Register Courier",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", () => { pm.response.to.have.status(200); });",
+											"const res = pm.response.json();",
+											"pm.test(\"Response contains user_id and token\", () => {",
+											"    pm.expect(res).to.have.property('user_id');",
+											"    pm.expect(res).to.have.property('token');",
+											"});",
+											"pm.collectionVariables.set(\"courier_id\", res.user_id);",
+											"pm.collectionVariables.set(\"courier_token\", res.token);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"full_name\": \"Test Courier\",\n    \"phone\": \"09120000003\",\n    \"password\": \"password123\",\n    \"role\": \"courier\",\n    \"address\": \"Courier Address\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/register",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"register"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Login Buyer",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", () => { pm.response.to.have.status(200); });",
+											"const res = pm.response.json();",
+											"pm.test(\"Login message is correct and token exists\", () => {",
+											"    pm.expect(res.message).to.eql(\"User logged in successfully\");",
+											"    pm.expect(res).to.have.property('token');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"phone\": \"09120000001\",\n    \"password\": \"password123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Successful Profile Management",
+					"item": [
+						{
+							"name": "Get Buyer Profile",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{buyer_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/auth/profile",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"profile"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Buyer Profile",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{buyer_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"full_name\": \"Test Buyer Updated\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/profile",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"profile"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Failed Authentication Scenarios",
+					"item": [
+						{
+							"name": "Register with existing phone",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 409 Conflict\", () => { pm.response.to.have.status(409); });"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"full_name\": \"Another Buyer\",\n    \"phone\": \"09120000001\",\n    \"password\": \"password456\",\n    \"role\": \"buyer\",\n    \"address\": \"Another Address\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/register",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"register"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Login with wrong password",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 401 Unauthorized\", () => { pm.response.to.have.status(401); });"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"phone\": \"09120000001\",\n    \"password\": \"wrongpassword\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/auth/login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get profile with invalid token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 401 Unauthorized\", () => { pm.response.to.have.status(401); });"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer invalidtoken"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/auth/profile",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"auth",
+										"profile"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Restaurant Management",
+			"item": [
+				{
+					"name": "Successful Restaurant and Item Creation",
+					"item": [
+						{
+							"name": "Create Restaurant",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 201 Created\", () => { pm.response.to.have.status(201); });",
+											"const res = pm.response.json();",
+											"pm.collectionVariables.set(\"restaurant_id\", res.id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{seller_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Test Restaurant\",\n    \"address\": \"Restaurant Address\",\n    \"phone\": \"02188888888\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/restaurants",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"restaurants"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add Food Item",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", () => { pm.response.to.have.status(200); });",
+											"const res = pm.response.json();",
+											"pm.collectionVariables.set(\"food_item_id\", res.id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{seller_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Test Food\",\n    \"description\": \"A delicious test food.\",\n    \"price\": 10000,\n    \"supply\": 10,\n    \"keywords\": [\"test\", \"food\"]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/restaurants/{{restaurant_id}}/item",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"restaurants",
+										"{{restaurant_id}}",
+										"item"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Failed Restaurant Management",
+					"item": [
+						{
+							"name": "Buyer tries to create restaurant",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 403 Forbidden\", () => { pm.response.to.have.status(403); });"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{buyer_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Buyer Restaurant\",\n    \"address\": \"...\",\n    \"phone\": \"...\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/restaurants",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"restaurants"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Basic Order Scenarios",
+			"item": [
+				{
+					"name": "Successful Simple Order",
+					"item": [
+						{
+							"name": "Place Simple Order",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", () => { pm.response.to.have.status(200); });",
+											"const res = pm.response.json();",
+											"pm.collectionVariables.set(\"simple_order_id\", res.id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{buyer_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"delivery_address\": \"Simple Order Address\",\n    \"vendor_id\": \"{{restaurant_id}}\",\n    \"items\": [\n        {\n            \"item_id\": \"{{food_item_id}}\",\n            \"quantity\": 1\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/orders",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"orders"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}
+

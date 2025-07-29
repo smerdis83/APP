@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.RateOrderController"
+      spacing="20" alignment="TOP_CENTER" prefWidth="500.0" prefHeight="600.0">
+    <padding>
+        <Insets top="20" right="30" bottom="20" left="30"/>
+    </padding>
+    <children>
+        <Label text="Rate Your Order" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2196f3;" />
+        <HBox spacing="10" alignment="CENTER">
+            <children>
+                <Label text="Rating:" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+                <RadioButton text="1" toggleGroup="$ratingGroup" fx:id="star1" />
+                <RadioButton text="2" toggleGroup="$ratingGroup" fx:id="star2" />
+                <RadioButton text="3" toggleGroup="$ratingGroup" fx:id="star3" />
+                <RadioButton text="4" toggleGroup="$ratingGroup" fx:id="star4" />
+                <RadioButton text="5" toggleGroup="$ratingGroup" fx:id="star5" />
+            </children>
+        </HBox>
+        <VBox spacing="5" alignment="CENTER_LEFT">
+            <Label text="Comment:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <TextArea fx:id="commentField" promptText="Write your comment..." prefRowCount="4" prefWidth="400" style="-fx-font-size: 14px; -fx-padding: 10;"/>
+        </VBox>
+        <VBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="Upload up to 3 pictures:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <HBox spacing="10">
+                <children>
+                    <ImageView fx:id="imageView1" fitHeight="80" fitWidth="80" style="-fx-border-color: #b0b0b0; -fx-border-width: 2;" />
+                    <ImageView fx:id="imageView2" fitHeight="80" fitWidth="80" style="-fx-border-color: #b0b0b0; -fx-border-width: 2;" />
+                    <ImageView fx:id="imageView3" fitHeight="80" fitWidth="80" style="-fx-border-color: #b0b0b0; -fx-border-width: 2;" />
+                </children>
+            </HBox>
+            <HBox spacing="10">
+                <Button fx:id="uploadBtn1" text="Upload Image 1" />
+                <Button fx:id="uploadBtn2" text="Upload Image 2" />
+                <Button fx:id="uploadBtn3" text="Upload Image 3" />
+            </HBox>
+        </VBox>
+        <HBox spacing="20" alignment="CENTER">
+            <Button fx:id="submitBtn" text="Submit" style="-fx-background-color: #2196f3; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 10 24 10 24;" />
+            <Button fx:id="backBtn" text="Back" style="-fx-background-color: #757575; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 10 24 10 24;" />
+        </HBox>
+        <Label fx:id="messageLabel" style="-fx-text-fill: #e74c3c; -fx-font-size: 14px;" />
+    </children>
+</VBox> 

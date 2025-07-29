@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" 
+      spacing="20" alignment="TOP_CENTER" prefWidth="600.0" prefHeight="700.0" 
+      fx:controller="com.example.foodapp.controller.EditRestaurantController">
+    <padding>
+        <Insets top="20" right="30" bottom="20" left="30"/>
+    </padding>
+    
+    <children>
+        <Label text="Edit Restaurant" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2196f3;" />
+        
+        <ScrollPane fitToWidth="true" prefHeight="500.0" style="-fx-background-color: transparent;">
+            <VBox spacing="15" alignment="TOP_CENTER">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                
+                <!-- Restaurant Logo -->
+                <VBox spacing="10" alignment="CENTER">
+                    <Label text="Restaurant Logo:" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <ImageView fx:id="logoImageView" fitHeight="120" fitWidth="120" 
+                              style="-fx-effect: dropshadow(gaussian, #b0b0b0, 6, 0.2, 0, 2); -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #e0e0e0; -fx-border-width: 2;"/>
+                    <Button fx:id="selectImageBtn" text="Select Image" 
+                           style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16 8 16;"/>
+                </VBox>
+                
+                <!-- Restaurant Name -->
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Restaurant Name:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="nameField" promptText="Enter restaurant name" 
+                              style="-fx-font-size: 14px; -fx-padding: 10;" prefWidth="400"/>
+                </VBox>
+                
+                <!-- Address -->
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Address:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextArea fx:id="addressField" promptText="Enter restaurant address" 
+                             prefRowCount="3" prefWidth="400"
+                             style="-fx-font-size: 14px; -fx-padding: 10;"/>
+                </VBox>
+                
+                <!-- Phone -->
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Phone Number:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="phoneField" promptText="Enter phone number" 
+                              style="-fx-font-size: 14px; -fx-padding: 10;" prefWidth="400"/>
+                </VBox>
+                
+                <!-- Tax Fee -->
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Tax Fee (%):" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="taxFeeField" promptText="Enter tax fee percentage" 
+                              style="-fx-font-size: 14px; -fx-padding: 10;" prefWidth="400"/>
+                </VBox>
+                
+                <!-- Additional Fee -->
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Additional Fee:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="additionalFeeField" promptText="Enter additional fee amount" 
+                              style="-fx-font-size: 14px; -fx-padding: 10;" prefWidth="400"/>
+                </VBox>
+                <!-- Description -->
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Description:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextArea fx:id="descriptionField" promptText="Enter restaurant description" 
+                             prefRowCount="3" prefWidth="400"
+                             style="-fx-font-size: 14px; -fx-padding: 10;"/>
+                </VBox>
+                <!-- Working Hours -->
+                <VBox spacing="5" alignment="CENTER_LEFT">
+                    <Label text="Working Hours:" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="workingHoursField" promptText="e.g. 08:00-18:00" 
+                              style="-fx-font-size: 14px; -fx-padding: 10;" prefWidth="400"/>
+                </VBox>
+            </VBox>
+        </ScrollPane>
+        
+        <!-- Action Buttons -->
+        <HBox alignment="CENTER" spacing="20">
+            <Button fx:id="saveBtn" text="Save Changes" 
+                   style="-fx-background-color: #2196f3; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 12 24 12 24;"/>
+            <Button fx:id="backBtn" text="Back" 
+                   style="-fx-background-color: #757575; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; -fx-padding: 12 24 12 24;"/>
+        </HBox>
+        
+        <!-- Message Label -->
+        <Label fx:id="messageLabel" style="-fx-text-fill: #e74c3c; -fx-font-size: 14px;" />
+    </children>
+</VBox>

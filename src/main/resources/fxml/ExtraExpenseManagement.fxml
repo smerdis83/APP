@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.ExtraExpenseManagementController" spacing="20" alignment="TOP_CENTER" prefWidth="600" prefHeight="500" style="-fx-background-color: #fafafa;">
+    <children>
+        <Label text="Manage Extra Expenses" styleClass="page-title" />
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="Select Restaurant:" />
+            <ComboBox fx:id="restaurantCombo" prefWidth="250" />
+        </HBox>
+        <TableView fx:id="expenseTable" prefHeight="300" prefWidth="500">
+            <columns>
+                <TableColumn fx:id="nameCol" text="Name" prefWidth="250" />
+                <TableColumn fx:id="amountCol" text="Amount" prefWidth="150" />
+                <TableColumn fx:id="actionsCol" text="Actions" prefWidth="100" />
+            </columns>
+        </TableView>
+        <HBox spacing="10" alignment="CENTER">
+            <Button fx:id="addBtn" text="Add Expense" styleClass="primary-button" />
+            <Button fx:id="backBtn" text="Back" styleClass="secondary-button" />
+        </HBox>
+        <Label fx:id="messageLabel" text="" styleClass="message-label" />
+    </children>
+</VBox>

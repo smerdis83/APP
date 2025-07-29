@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.foodapp.controller.CouponController">
+   <padding>
+      <Insets top="20" right="20" bottom="20" left="20"/>
+   </padding>
+
+   <Label text="Coupon Management" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+   
+   <Separator/>
+   
+   <!-- Form Section -->
+   <VBox spacing="10" style="-fx-background-color: #f5f5f5; -fx-padding: 15;">
+      <Label text="Coupon Details" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+      
+      <GridPane hgap="10" vgap="10">
+         <columnConstraints>
+            <ColumnConstraints hgrow="NEVER" minWidth="100" prefWidth="120"/>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="250"/>
+            <ColumnConstraints hgrow="NEVER" minWidth="100" prefWidth="120"/>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="200" prefWidth="250"/>
+         </columnConstraints>
+         
+         <!-- Row 1 -->
+         <Label text="Coupon Code:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+         <TextField fx:id="couponCodeField" GridPane.columnIndex="1" GridPane.rowIndex="0" promptText="Enter coupon code"/>
+         
+         <Label text="Type:" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+         <ComboBox fx:id="typeComboBox" GridPane.columnIndex="3" GridPane.rowIndex="0" promptText="Select type"/>
+         
+         <!-- Row 2 -->
+         <Label text="Value:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+         <TextField fx:id="valueField" GridPane.columnIndex="1" GridPane.rowIndex="1" promptText="Enter value"/>
+         
+         <Label text="Min Price:" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
+         <TextField fx:id="minPriceField" GridPane.columnIndex="3" GridPane.rowIndex="1" promptText="Enter minimum price"/>
+         
+         <!-- Row 3 -->
+         <Label text="User Count:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+         <TextField fx:id="userCountField" GridPane.columnIndex="1" GridPane.rowIndex="2" promptText="Enter user count"/>
+         
+         <Label text="Max Uses/User:" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+         <TextField fx:id="maxUsesPerUserField" GridPane.columnIndex="3" GridPane.rowIndex="2" promptText="Enter max uses per user"/>
+         
+         <!-- Row 4 -->
+         <Label text="Start Date:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+         <DatePicker fx:id="startDatePicker" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+         
+         <Label text="End Date:" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+         <DatePicker fx:id="endDatePicker" GridPane.columnIndex="3" GridPane.rowIndex="3"/>
+      </GridPane>
+      
+      <!-- Buttons -->
+      <HBox spacing="10" alignment="CENTER_LEFT">
+         <Button fx:id="createCouponBtn" text="Create Coupon" onAction="#handleCreateCoupon" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+         <Button fx:id="updateCouponBtn" text="Update Coupon" onAction="#handleUpdateCoupon" style="-fx-background-color: #2196F3; -fx-text-fill: white;"/>
+         <Button fx:id="deleteCouponBtn" text="Delete Coupon" onAction="#handleDeleteCoupon" style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+         <Button fx:id="clearFormBtn" text="Clear Form" onAction="#handleClearForm" style="-fx-background-color: #FF9800; -fx-text-fill: white;"/>
+      </HBox>
+      
+      <!-- Status Label -->
+      <Label fx:id="statusLabel" text="" style="-fx-font-weight: bold;"/>
+   </VBox>
+   
+   <Separator/>
+   
+   <!-- Table Section -->
+   <VBox spacing="10">
+      <Label text="Existing Coupons" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+      <TableView fx:id="couponsTable" VBox.vgrow="ALWAYS" prefHeight="300">
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+         </columnResizePolicy>
+      </TableView>
+   </VBox>
+</VBox> 

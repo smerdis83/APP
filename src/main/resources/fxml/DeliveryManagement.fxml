@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="TOP_CENTER" prefWidth="800.0" prefHeight="600.0" fx:controller="com.example.foodapp.controller.DeliveryManagementController">
+    <children>
+        <Button fx:id="backBtn" text="Back" maxWidth="100" />
+        <Label fx:id="messageLabel" style="-fx-text-fill: green; -fx-font-size: 16px;" />
+        <TabPane prefWidth="780.0" prefHeight="500.0">
+            <tabs>
+                <Tab text="All Orders" closable="false">
+                    <content>
+                        <ListView fx:id="allList" prefHeight="450.0" />
+                    </content>
+                </Tab>
+                <Tab text="Accepted Orders" closable="false">
+                    <content>
+                        <ListView fx:id="acceptedList" prefHeight="450.0" />
+                    </content>
+                </Tab>
+                <Tab text="Received Orders" closable="false">
+                    <content>
+                        <ListView fx:id="receivedList" prefHeight="450.0" />
+                    </content>
+                </Tab>
+                <Tab text="Delivered Orders" closable="false">
+                    <content>
+                        <ListView fx:id="deliveredList" prefHeight="450.0" />
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </children>
+</VBox> 

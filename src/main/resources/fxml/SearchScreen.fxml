@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" 
+      spacing="20" alignment="TOP_CENTER" prefWidth="1200.0" prefHeight="800.0" 
+      styleClass="search-container" fx:controller="com.example.foodapp.controller.SearchController">
+    
+    <!-- Header Section -->
+    <VBox styleClass="header-section" spacing="10" alignment="CENTER">
+        <Text text="🔍 Search Foods &amp; Restaurants" styleClass="page-title"/>
+        <Text text="Find your favorite foods and discover new restaurants" styleClass="page-subtitle"/>
+    </VBox>
+    
+    <!-- Search Controls Section -->
+    <VBox styleClass="search-controls" spacing="15" alignment="CENTER" maxWidth="800">
+        <!-- Search Bar -->
+        <HBox spacing="10" alignment="CENTER">
+            <TextField fx:id="searchField" promptText="Search for foods or restaurants..." 
+                      prefWidth="400" styleClass="search-input"/>
+            <Button fx:id="searchBtn" text="Search" styleClass="primary-button"/>
+            <Button fx:id="clearBtn" text="Clear" styleClass="secondary-button"/>
+        </HBox>
+        
+        <!-- Filters -->
+        <HBox spacing="20" alignment="CENTER">
+            <!-- Rating Filter -->
+            <VBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Rating:" styleClass="filter-label"/>
+                <ComboBox fx:id="ratingCombo" prefWidth="120" styleClass="filter-combo"/>
+            </VBox>
+        </HBox>
+    </VBox>
+    
+    <!-- Message Label -->
+    <Label fx:id="messageLabel" text="" styleClass="message-label" alignment="CENTER"/>
+    
+    <!-- Results Section -->
+    <HBox spacing="30" alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
+        <!-- Foods Section -->
+        <VBox fx:id="foodsSection" styleClass="results-section" spacing="10" prefWidth="1100" VBox.vgrow="ALWAYS">
+            <Label fx:id="foodsLabel" text="Foods (0 found)" styleClass="section-title"/>
+            <ListView fx:id="foodsList" VBox.vgrow="ALWAYS" styleClass="results-list"/>
+        </VBox>
+    </HBox>
+    
+    <!-- Navigation -->
+    <HBox spacing="10" alignment="CENTER">
+        <Button fx:id="backBtn" text="Back" styleClass="secondary-button"/>
+    </HBox>
+    
+    <padding>
+        <Insets top="20" right="30" bottom="20" left="30"/>
+    </padding>
+</VBox>

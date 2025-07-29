@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" spacing="20" alignment="TOP_CENTER" prefWidth="800.0" prefHeight="600.0" fx:controller="com.example.foodapp.controller.SimpleRestaurantOrdersController">
+    <children>
+        <ComboBox fx:id="restaurantCombo" promptText="Select Restaurant" prefWidth="400.0" />
+        <ListView fx:id="ordersList" prefHeight="500.0" />
+    </children>
+</VBox> 
