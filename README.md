@@ -31,7 +31,7 @@ This is a full-stack food delivery application that connects customers, restaura
 
 ## 🏗️ Architecture
 
-### Backend Architecture
+### App Architecture
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   JavaFX UI     │    │   HTTP Server   │    │   Database      │
